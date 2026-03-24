@@ -327,6 +327,7 @@ const CSV_URLS = {
   retail:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=66568834&single=true&output=csv",
   misc:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=132574097&single=true&output=csv",
   booth:     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=333995977&single=true&output=csv",
+  jewelry:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=1586441120&single=true&output=csv",
 };
 
 const TABS = [
@@ -336,10 +337,11 @@ const TABS = [
   { key: "retail",    label: "Retail Items",   icon: "👜" },
   { key: "misc",      label: "Misc / Vinyl",   icon: "✨" },
   { key: "booth",     label: "Booth Supplies", icon: "🏪" },
+  { key: "jewelry",   label: "Jewelry",        icon: "💎" },
 ];
 
 const NO_RETAIL_TABS = ["booth"];
-const RESELLABLE = ["patches","hats","hatchains","retail","misc"];
+const RESELLABLE = ["patches","hats","hatchains","retail","misc","jewelry"];
 
 let data = {};
 let activeTab = "patches";
@@ -377,6 +379,7 @@ async function loadAll() {
   try {
     const entries = await Promise.all(
       Object.entries(CSV_URLS).map(async ([key, url]) => {
+        if (!url) return [key, []];
         const res = await fetch(PROXY + encodeURIComponent(url));
         const text = await res.text();
         return [key, parseCSV(text)];
