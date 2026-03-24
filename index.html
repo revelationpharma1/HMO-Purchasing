@@ -361,13 +361,13 @@ function parseCSV(text) {
     const obj = {};
     headers.forEach((h, i) => {
       let v = (cols[i] || "").trim().replace(/^"|"$/g, "");
-      if (h === "qty" || h === "id") v = parseInt(v) || 0;
+      if (h === "qty" || h === "id" || h === "qty_sold") v = parseInt(v) || 0;
       else if (h === "wholesale" || h === "retail") v = v === "" ? null : parseFloat(v) || null;
       else if (h === "arrived") v = v.toUpperCase() === "TRUE";
       obj[h] = v;
     });
     return obj;
-  }).filter(r => r.id && r.item);
+  }).filter(r => r.id && r.item).map(r => ({ qty_sold: 0, ...r }));
 }
 
 // ── Load all sheets ─────────────────────────────────────────
@@ -448,6 +448,10 @@ function renderSummary() {
   const jamieSpent = all.filter(r=>r.purchaser==="Jamie").reduce((s,r)=>s+(r.wholesale||0),0);
   const taraPct = totalSpent > 0 ? (taraSpent/totalSpent*100).toFixed(0) : 50;
   const jamiePct = totalSpent > 0 ? (jamieSpent/totalSpent*100).toFixed(0) : 50;
+  const soldItems = resellAll.filter(r => r.retail && r.qty_sold > 0);
+  const actualRevenue = soldItems.reduce((s,r) => s + r.retail * r.qty_sold, 0);
+  const actualCOGS = soldItems.reduce((s,r) => s + cpu(r) * r.qty_sold, 0);
+  const actualProfit = actualRevenue - actualCOGS;
 
   document.getElementById("summaryTop").innerHTML = `
     <div class="card black"><div class="label">Total Invested</div><div class="value">$${totalSpent.toFixed(2)}</div></div>
@@ -455,6 +459,7 @@ function renderSummary() {
     <div class="card pink-med"><div class="label">Pending</div><div class="value">$${pendingSpent.toFixed(2)}</div></div>
     <div class="card light"><div class="label">Potential Revenue</div><div class="value">${potRev > 0 ? '$'+potRev.toFixed(2) : '—'}</div></div>
     <div class="card light profit"><div class="label">Potential Profit</div><div class="value">${potProfit > 0 ? '$'+potProfit.toFixed(2) : '—'}</div></div>
+    <div class="card" style="background:#1a3d2b;border-color:#2d7a4f"><div class="label" style="color:#7ecfa0">Actual Profit to Date</div><div class="value" style="color:#7ecfa0">${actualProfit > 0 ? '$'+actualProfit.toFixed(2) : actualRevenue > 0 ? '-$'+Math.abs(actualProfit).toFixed(2) : '—'}</div></div>
   `;
 
   document.getElementById("summaryBottom").innerHTML = `
@@ -511,6 +516,9 @@ function renderTable() {
     const rs = rv !== null ? roiStyle(rv) : "";
     const rowClass = r.arrived ? (i%2===0 ? "arrived-even" : "arrived-odd") : "pending";
     const byClass = r.purchaser === "Jamie" ? "by-jamie" : "by-tara";
+    const qtySold = r.qty_sold || 0;
+    const qtyLeft = (r.qty || 0) - qtySold;
+    const actualRev = r.retail && qtySold > 0 ? r.retail * qtySold : null;
 
     const retailCells = showRetail ? `
       <td>${editableCell(r, "retail", "number", "$")}</td>
@@ -518,6 +526,8 @@ function renderTable() {
     ` : "";
 
     const marginColor = margin !== null ? (margin > 0 ? "green" : "red-val") : "gray-val";
+    const soldCellStyle = qtySold > 0 ? 'style="color:#2d7a4f;font-weight:700"' : '';
+    const leftStyle = qtyLeft < 0 ? 'style="color:#c0392b;font-weight:700"' : qtyLeft === 0 && r.qty > 0 ? 'style="color:#888"' : '';
 
     return `
       <tr class="${rowClass}" id="row-${activeTab}-${r.id}">
@@ -528,6 +538,9 @@ function renderTable() {
         <td class="cost">$${c.toFixed(2)}</td>
         ${retailCells}
         <td class="${marginColor}">${margin !== null ? '$'+margin.toFixed(2) : '—'}</td>
+        <td ${soldCellStyle}>${editableCell(r, "qty_sold", "number")}</td>
+        <td ${leftStyle}>${qtyLeft}</td>
+        <td style="color:#2d7a4f;font-weight:700">${actualRev !== null ? '$'+actualRev.toFixed(2) : '—'}</td>
         <td class="source-cell">${editableCell(r, "source", "text")}</td>
         <td class="${byClass}">${editableCell(r, "purchaser", "text")}</td>
         <td><button class="del-btn" onclick="deleteRow('${activeTab}',${r.id})">×</button></td>
@@ -547,6 +560,9 @@ function renderTable() {
             <th>Cost/Item</th>
             ${showRetail ? "<th>Retail</th><th>ROI %</th>" : ""}
             <th>Margin/Item</th>
+            <th style="background:#1a3d2b;color:#7ecfa0">Sold</th>
+            <th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>
+            <th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>
             <th class="left">Source</th>
             <th>By</th>
             <th></th>
@@ -560,7 +576,10 @@ function renderTable() {
             <td class="total-cost">$${totalWholesale.toFixed(2)}</td>
             <td>—</td>
             ${showRetail ? "<td>—</td><td>—</td>" : ""}
-            <td class="total-rev">${totalRevenue > 0 ? '$'+totalRevenue.toFixed(2)+' rev' : '—'}</td>
+            <td>—</td>
+            <td style="color:#2d7a4f;font-weight:700">${rows.reduce((s,r)=>s+(r.qty_sold||0),0)}</td>
+            <td>—</td>
+            <td style="color:#2d7a4f;font-weight:700">${rows.filter(r=>r.retail&&r.qty_sold>0).reduce((s,r)=>s+r.retail*(r.qty_sold||0),0).toFixed(2) > 0 ? '$'+rows.filter(r=>r.retail&&r.qty_sold>0).reduce((s,r)=>s+r.retail*(r.qty_sold||0),0).toFixed(2) : '—'}</td>
             <td colspan="3"></td>
           </tr>
         </tfoot>
@@ -615,7 +634,7 @@ function deleteRow(sheet, id) {
 function addRow(sheet) {
   const rows = data[sheet];
   const newId = Math.max(...rows.map(r => r.id), 0) + 1;
-  rows.push({ id: newId, item: "New Item", qty: 1, wholesale: 0, retail: null, source: "", purchaser: "", arrived: false, notes: "" });
+  rows.push({ id: newId, item: "New Item", qty: 1, wholesale: 0, retail: null, qty_sold: 0, source: "", purchaser: "", arrived: false, notes: "" });
   renderAll();
   // Scroll to bottom of table
   setTimeout(() => {
