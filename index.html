@@ -395,23 +395,67 @@ async function loadAll() {
   }
 }
 
-// ── Save a single cell ───────────────────────────────────────
-async function saveCell(sheet, id, field, value) {
+// ── Saving indicator helper ──────────────────────────────────
+function showSaving() {
   const ind = document.getElementById("savingIndicator");
   ind.classList.add("visible");
   ind.textContent = "Saving...";
+  return ind;
+}
+function showSaved(ind) {
+  ind.textContent = "✓ Saved";
+  setTimeout(() => ind.classList.remove("visible"), 2000);
+}
+function showSaveFailed(ind) {
+  ind.textContent = "⚠️ Save failed";
+  setTimeout(() => ind.classList.remove("visible"), 3000);
+}
+
+// ── Save a single cell ───────────────────────────────────────
+async function saveCell(sheet, id, field, value) {
+  const ind = showSaving();
   try {
-    await fetch(SCRIPT_URL, {
+    const res = await fetch(SCRIPT_URL, {
       method: "POST",
-      mode: "no-cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sheet, id, field, value }),
     });
-    ind.textContent = "✓ Saved";
-    setTimeout(() => ind.classList.remove("visible"), 2000);
+    const json = await res.json();
+    json.success ? showSaved(ind) : showSaveFailed(ind);
   } catch (e) {
-    ind.textContent = "⚠️ Save failed";
-    setTimeout(() => ind.classList.remove("visible"), 3000);
+    showSaveFailed(ind);
+  }
+}
+
+// ── Save a new row ────────────────────────────────────────────
+async function saveNewRow(sheet, rowData) {
+  const ind = showSaving();
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "addRow", sheet, rowData }),
+    });
+    const json = await res.json();
+    json.success ? showSaved(ind) : showSaveFailed(ind);
+  } catch (e) {
+    showSaveFailed(ind);
+  }
+}
+
+// ── Delete a row ──────────────────────────────────────────────
+async function deleteRowRemote(sheet, id) {
+  const ind = showSaving();
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "deleteRow", sheet, id }),
+    });
+    const json = await res.json();
+    json.success ? showSaved(ind) : showSaveFailed(ind);
+  } catch (e) {
+    showSaveFailed(ind);
   }
 }
 
@@ -675,15 +719,17 @@ function toggleArrived(sheet, id, checked) {
 function deleteRow(sheet, id) {
   if (!confirm("Delete this row?")) return;
   data[sheet] = data[sheet].filter(r => r.id !== id);
+  deleteRowRemote(sheet, id);
   renderAll();
 }
 
 function addRow(sheet) {
   const rows = data[sheet];
   const newId = Math.max(...rows.map(r => r.id), 0) + 1;
-  rows.push({ id: newId, item: "New Item", qty: 1, wholesale: 0, retail: null, qty_sold: 0, source: "", purchaser: "", arrived: false, notes: "" });
+  const newRow = { id: newId, item: "New Item", qty: 1, wholesale: 0, retail: null, qty_sold: 0, source: "", purchaser: "", arrived: false, notes: "" };
+  rows.push(newRow);
+  saveNewRow(sheet, newRow);
   renderAll();
-  // Scroll to bottom of table
   setTimeout(() => {
     const el = document.getElementById(`row-${sheet}-${newId}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
