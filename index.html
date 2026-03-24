@@ -263,6 +263,162 @@
     /* SVG logo */
     svg.logo { flex-shrink: 0; }
 
+    /* Contacts Sidebar */
+    .contacts-btn {
+      position: fixed;
+      top: 24px; right: 24px;
+      background: var(--black);
+      color: var(--white);
+      border: none; border-radius: 24px;
+      padding: 10px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      z-index: 100;
+      display: flex; align-items: center; gap: 7px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      transition: opacity 0.15s;
+    }
+    .contacts-btn:hover { opacity: 0.85; }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 200;
+      animation: fadeIn 0.2s ease;
+    }
+    .sidebar-overlay.open { display: block; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .sidebar {
+      position: fixed;
+      top: 0; right: -480px;
+      width: 460px; max-width: 95vw;
+      height: 100vh;
+      background: var(--white);
+      box-shadow: -6px 0 30px rgba(0,0,0,0.12);
+      z-index: 300;
+      display: flex; flex-direction: column;
+      transition: right 0.28s cubic-bezier(0.4,0,0.2,1);
+      overflow: hidden;
+    }
+    .sidebar.open { right: 0; }
+
+    .sidebar-header {
+      padding: 20px 22px 16px;
+      border-bottom: 2px solid var(--pink);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sidebar-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px; font-weight: 900;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .sidebar-close {
+      background: var(--pink-light); border: none;
+      border-radius: 50%; width: 32px; height: 32px;
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--black); font-weight: 700;
+      transition: background 0.15s;
+    }
+    .sidebar-close:hover { background: var(--pink); }
+
+    .sidebar-search {
+      padding: 12px 22px;
+      border-bottom: 1px solid var(--pink-med);
+      flex-shrink: 0;
+    }
+    .sidebar-search input {
+      width: 100%;
+      padding: 9px 16px;
+      border: 1.5px solid var(--pink);
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .sidebar-search input:focus { border-color: var(--pink-dark); }
+
+    .sidebar-body {
+      flex: 1; overflow-y: auto;
+      padding: 14px 22px;
+    }
+
+    .contact-card {
+      border: 1.5px solid var(--pink-med);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: var(--white);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .contact-card:hover { border-color: var(--pink-dark); box-shadow: 0 2px 10px rgba(231,195,204,0.4); }
+
+    .contact-card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .contact-venue {
+      font-weight: 800; font-size: 15px; color: var(--black);
+      flex: 1; margin-right: 10px;
+    }
+    .contact-venue.editable-contact { cursor: pointer; }
+    .contact-venue.editable-contact:hover { color: var(--pink-dark); }
+
+    .contact-del-btn {
+      background: none; border: none; color: var(--pink-med);
+      cursor: pointer; font-size: 18px; line-height: 1;
+      flex-shrink: 0; transition: color 0.15s;
+    }
+    .contact-del-btn:hover { color: var(--red); }
+
+    .contact-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .contact-field { display: flex; flex-direction: column; gap: 2px; }
+    .contact-field.full { grid-column: 1 / -1; }
+    .contact-field label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--gray);
+    }
+    .contact-field .cf-value {
+      font-size: 13px; color: var(--black);
+      cursor: pointer; padding: 4px 8px;
+      border-radius: 6px; border: 1.5px solid transparent;
+      transition: border-color 0.15s, background 0.15s;
+      min-height: 28px;
+    }
+    .contact-field .cf-value:hover { background: var(--pink-light); border-color: var(--pink); }
+    .contact-field .cf-value.empty { color: var(--pink-dark); font-style: italic; }
+    .contact-field .cf-value input, .contact-field .cf-value textarea {
+      width: 100%; background: none; border: none; outline: none;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--black);
+      resize: none;
+    }
+    .contact-field .cf-fee { color: var(--green); font-weight: 700; }
+
+    .sidebar-footer {
+      padding: 14px 22px;
+      border-top: 1px solid var(--pink-med);
+      flex-shrink: 0;
+    }
+    .add-contact-btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--black); color: var(--white);
+      border: none; border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .add-contact-btn:hover { opacity: 0.8; }
+
+    .no-contacts {
+      text-align: center; padding: 40px 20px;
+      color: var(--gray); font-size: 14px;
+    }
+
     /* Search */
     .search-wrap {
       position: relative;
@@ -395,10 +551,32 @@
 
 </div>
 
+<!-- Contacts Button -->
+<button class="contacts-btn" onclick="openSidebar()">📋 Contacts</button>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>📋 Contact List</h2>
+    <button class="sidebar-close" onclick="closeSidebar()">×</button>
+  </div>
+  <div class="sidebar-search">
+    <input type="text" id="contactSearch" placeholder="Search contacts..." oninput="renderContacts()" />
+  </div>
+  <div class="sidebar-body" id="contactsBody"></div>
+  <div class="sidebar-footer">
+    <button class="add-contact-btn" onclick="addContact()">+ Add Contact</button>
+  </div>
+</div>
+
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyLbQR1X49KFIoyiXiSKj6USys79zEU12-5Pf7Gvg-yjAKj_6TBA_B0IezM84yMUm2SQA/exec";
 const SHEET_ID = "1Dl7Lb3QObc_Ct2mj6E0aWf6OzFd-WhJUu1hSCBdNzKE";
 const PROXY = "https://corsproxy.io/?url=";
+const CONTACTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=77821631&single=true&output=csv";
 
 const CSV_URLS = {
   patches:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=0&single=true&output=csv",
@@ -1011,6 +1189,172 @@ function renderSearchResults() {
   document.getElementById("tableContainer").innerHTML = totalMatches > 0
     ? `<div style="border-radius:10px;overflow:hidden;border:1px solid var(--pink-med)">${html}</div>`
     : `<div style="text-align:center;padding:60px;color:var(--gray);font-size:15px">😕 No items found matching "<strong>${searchQuery}</strong>"</div>`;
+}
+
+// ── Contacts ─────────────────────────────────────────────────
+const CONTACTS_KEY = "hmo_contacts_v1";
+let contactsData = [];
+
+function loadContacts() {
+  return contactsData;
+}
+
+function saveContacts(contacts) {
+  contactsData = contacts;
+  // Also persist locally so edits survive until Sheet cache refreshes
+  try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts)); } catch(e) {}
+}
+
+async function loadContactsFromSheet() {
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(CONTACTS_CSV));
+    const text = await res.text();
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) { loadContactsFromCache(); return; }
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,"").toLowerCase());
+    const parsed = lines.slice(1).map(line => {
+      const cols = [];
+      let cur = "", inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { cols.push(cur); cur = ""; }
+        else { cur += c; }
+      }
+      cols.push(cur);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (cols[i]||"").trim().replace(/^"|"$/g,""); });
+      obj.id = parseInt(obj.id) || Date.now();
+      return obj;
+    }).filter(r => r.id && r.venue);
+
+    // Merge with local cache edits on top
+    const cached = getCachedContacts();
+    const cachedMap = {};
+    cached.forEach(c => cachedMap[c.id] = c);
+    contactsData = parsed.map(r => cachedMap[r.id] ? { ...r, ...cachedMap[r.id] } : r);
+    // Add locally new contacts not yet in sheet
+    const sheetIds = new Set(parsed.map(r => r.id));
+    cached.forEach(c => { if (!sheetIds.has(c.id)) contactsData.push(c); });
+  } catch(e) {
+    loadContactsFromCache();
+  }
+  renderContacts();
+}
+
+function getCachedContacts() {
+  try { return JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []; } catch(e) { return []; }
+}
+
+function loadContactsFromCache() {
+  contactsData = getCachedContacts();
+}
+
+function openSidebar() {
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("sidebarOverlay").classList.add("open");
+  loadContactsFromSheet();
+}
+
+function closeSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebarOverlay").classList.remove("open");
+}
+
+function addContact() {
+  const contacts = loadContacts();
+  const newId = Date.now();
+  const newContact = { id: newId, venue: "New Venue", name: "", phone: "", email: "", fee: "", notes: "" };
+  contacts.push(newContact);
+  saveContacts(contacts);
+  saveNewRow("contacts", newContact);
+  renderContacts();
+  setTimeout(() => {
+    const el = document.getElementById("cv-" + newId);
+    if (el) { el.click(); el.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  }, 50);
+}
+
+function deleteContact(id) {
+  if (!confirm("Delete this contact?")) return;
+  const contacts = loadContacts().filter(c => c.id !== id);
+  saveContacts(contacts);
+  deleteRowRemote("contacts", id);
+  renderContacts();
+}
+
+function editContactField(id, field, el) {
+  const contacts = loadContacts();
+  const contact = contacts.find(c => c.id === id);
+  if (!contact) return;
+  const cur = contact[field] || "";
+  const isMultiline = field === "notes";
+  el.innerHTML = isMultiline
+    ? `<textarea rows="2" autofocus style="width:100%;background:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--black);resize:none">${cur}</textarea>`
+    : `<input type="text" value="${cur.replace(/"/g, '&quot;')}" autofocus style="width:100%;background:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--black)" />`;
+  const input = el.querySelector("input, textarea");
+  input.focus();
+  input.select && input.select();
+  const commit = () => {
+    const val = input.value.trim();
+    contact[field] = val;
+    saveContacts(contacts);
+    saveCell("contacts", id, field, val);
+    renderContacts();
+  };
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", e => { if (e.key === "Enter" && !isMultiline) { e.preventDefault(); input.blur(); } });
+}
+
+function renderContacts() {
+  const contacts = loadContacts();
+  const q = (document.getElementById("contactSearch")?.value || "").toLowerCase().trim();
+  const filtered = q ? contacts.filter(c =>
+    (c.venue||"").toLowerCase().includes(q) ||
+    (c.name||"").toLowerCase().includes(q) ||
+    (c.phone||"").toLowerCase().includes(q) ||
+    (c.email||"").toLowerCase().includes(q) ||
+    (c.notes||"").toLowerCase().includes(q)
+  ) : contacts;
+
+  const body = document.getElementById("contactsBody");
+  if (!body) return;
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<div class="no-contacts">${q ? '😕 No contacts match your search.' : '📋 No contacts yet.<br/>Hit <strong>+ Add Contact</strong> to get started!'}</div>`;
+    return;
+  }
+
+  body.innerHTML = filtered.map(c => `
+    <div class="contact-card">
+      <div class="contact-card-header">
+        <div class="contact-venue editable-contact" id="cv-${c.id}" onclick="editContactField(${c.id},'venue',this)">${c.venue || '<span style="color:var(--pink-dark);font-style:italic">Venue name</span>'}</div>
+        <button class="contact-del-btn" onclick="deleteContact(${c.id})">×</button>
+      </div>
+      <div class="contact-fields">
+        <div class="contact-field">
+          <label>Contact Name</label>
+          <div class="cf-value ${!c.name?'empty':''}" onclick="editContactField(${c.id},'name',this)">${c.name || 'Add name'}</div>
+        </div>
+        <div class="contact-field">
+          <label>Phone</label>
+          <div class="cf-value ${!c.phone?'empty':''}" onclick="editContactField(${c.id},'phone',this)">${c.phone || 'Add phone'}</div>
+        </div>
+        <div class="contact-field">
+          <label>Email</label>
+          <div class="cf-value ${!c.email?'empty':''}" onclick="editContactField(${c.id},'email',this)">${c.email || 'Add email'}</div>
+        </div>
+        <div class="contact-field">
+          <label>Booth Fee</label>
+          <div class="cf-value cf-fee ${!c.fee?'empty':''}" onclick="editContactField(${c.id},'fee',this)">${c.fee || 'Add fee'}</div>
+        </div>
+        <div class="contact-field full">
+          <label>Notes</label>
+          <div class="cf-value ${!c.notes?'empty':''}" onclick="editContactField(${c.id},'notes',this)">${c.notes || 'Add notes'}</div>
+        </div>
+      </div>
+    </div>
+  `).join("");
 }
 
 // ── Boot ─────────────────────────────────────────────────────
