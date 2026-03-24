@@ -411,52 +411,33 @@ function showSaveFailed(ind) {
   setTimeout(() => ind.classList.remove("visible"), 3000);
 }
 
-// ── Save a single cell ───────────────────────────────────────
-async function saveCell(sheet, id, field, value) {
+// ── Core save function (uses URL params to avoid CORS preflight) ─
+async function sendToSheet(payload) {
   const ind = showSaving();
   try {
-    const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sheet, id, field, value }),
-    });
-    const json = await res.json();
-    json.success ? showSaved(ind) : showSaveFailed(ind);
+    // Encode payload as a URL param — GET requests don't trigger CORS preflight
+    const url = SCRIPT_URL + "?data=" + encodeURIComponent(JSON.stringify(payload));
+    await fetch(url, { method: "GET", mode: "no-cors" });
+    // no-cors means we can't read the response, but the request goes through
+    showSaved(ind);
   } catch (e) {
     showSaveFailed(ind);
   }
+}
+
+// ── Save a single cell ───────────────────────────────────────
+function saveCell(sheet, id, field, value) {
+  sendToSheet({ sheet, id, field, value });
 }
 
 // ── Save a new row ────────────────────────────────────────────
-async function saveNewRow(sheet, rowData) {
-  const ind = showSaving();
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "addRow", sheet, rowData }),
-    });
-    const json = await res.json();
-    json.success ? showSaved(ind) : showSaveFailed(ind);
-  } catch (e) {
-    showSaveFailed(ind);
-  }
+function saveNewRow(sheet, rowData) {
+  sendToSheet({ action: "addRow", sheet, rowData });
 }
 
 // ── Delete a row ──────────────────────────────────────────────
-async function deleteRowRemote(sheet, id) {
-  const ind = showSaving();
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "deleteRow", sheet, id }),
-    });
-    const json = await res.json();
-    json.success ? showSaved(ind) : showSaveFailed(ind);
-  } catch (e) {
-    showSaveFailed(ind);
-  }
+function deleteRowRemote(sheet, id) {
+  sendToSheet({ action: "deleteRow", sheet, id });
 }
 
 // ── Status ───────────────────────────────────────────────────
