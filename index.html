@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HMO! Shop — Inventory Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --pink: #E7C3CC;
+      --pink-dark: #c9929f;
+      --pink-light: #f9eef0;
+      --pink-med: #f0d5da;
+      --black: #111111;
+      --gray: #666;
+      --light-gray: #f5f5f5;
+      --white: #ffffff;
+      --green: #2d7a4f;
+      --red: #c0392b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--black);
+      min-height: 100vh;
+      padding: 28px 20px;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--pink);
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--black);
+    }
+    .header p {
+      font-size: 13px;
+      color: var(--pink-dark);
+      font-style: italic;
+      margin-top: 3px;
+    }
+
+    .hint { font-size: 12px; color: var(--gray); margin: 10px 0 20px; }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--gray);
+      margin-bottom: 16px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #aaa;
+      transition: background 0.3s;
+    }
+    .status-dot.loading { background: #f0a500; animation: pulse 1s infinite; }
+    .status-dot.live { background: var(--green); }
+    .status-dot.error { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Summary cards */
+    .summary-top {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .summary-bottom {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .card {
+      flex: 1 1 140px;
+      border-radius: 12px;
+      padding: 14px 18px;
+      border: 1px solid var(--pink);
+    }
+    .card .label {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.6px; margin-bottom: 4px; font-weight: 600;
+    }
+    .card .value { font-size: 21px; font-weight: 800; }
+    .card.black { background: var(--black); }
+    .card.black .label { color: #ccc; }
+    .card.black .value { color: var(--white); }
+    .card.pink { background: var(--pink); }
+    .card.pink .label, .card.pink .value { color: var(--black); }
+    .card.pink-med { background: var(--pink-med); }
+    .card.pink-med .label, .card.pink-med .value { color: var(--black); }
+    .card.light { background: var(--pink-light); }
+    .card.light .label { color: var(--gray); }
+    .card.light .value { color: var(--black); }
+    .card.light.profit .value { color: var(--green); }
+
+    /* Purchaser cards */
+    .purchaser-card {
+      flex: 1 1 200px;
+      background: var(--white);
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .purchaser-card.tara { border: 2px solid var(--black); }
+    .purchaser-card.jamie { border: 2px solid var(--pink-dark); }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; color: white; flex-shrink: 0;
+    }
+    .avatar.t { background: var(--black); }
+    .avatar.j { background: var(--pink-dark); }
+    .purchaser-card .p-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--gray); font-weight: 600; }
+    .purchaser-card.tara .p-value { font-size: 20px; font-weight: 800; color: var(--black); }
+    .purchaser-card.jamie .p-value { font-size: 20px; font-weight: 800; color: var(--pink-dark); }
+
+    .split-card {
+      flex: 1 1 200px;
+      background: var(--white);
+      border-radius: 12px;
+      padding: 12px 18px;
+      border: 1px solid var(--pink-med);
+    }
+    .split-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--gray); font-weight: 600; margin-bottom: 8px; }
+    .split-bar { height: 10px; border-radius: 5px; background: var(--pink-med); overflow: hidden; display: flex; }
+    .split-bar-tara { background: var(--black); border-radius: 5px 0 0 5px; transition: width 0.4s; }
+    .split-bar-jamie { flex: 1; background: var(--pink-dark); border-radius: 0 5px 5px 0; }
+    .split-pct { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; font-weight: 700; }
+    .split-pct span:first-child { color: var(--black); }
+    .split-pct span:last-child { color: var(--pink-dark); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 9px 18px; border-radius: 20px;
+      border: 2px solid var(--pink);
+      background: var(--white); color: var(--black);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { border-color: var(--black); }
+    .tab-btn.active { background: var(--black); color: var(--white); border-color: var(--black); }
+    .tab-btn .count {
+      margin-left: 7px; background: var(--pink-light); color: var(--black);
+      border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: 700;
+    }
+    .tab-btn.active .count { background: var(--pink); }
+
+    /* Legend */
+    .legend { display: flex; gap: 12px; font-size: 11px; color: var(--gray); flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .roi-badge { border-radius: 20px; padding: 2px 10px; font-weight: 700; font-size: 11px; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--pink-med); margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 10px 12px; font-weight: 700; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      background: var(--pink); color: var(--black);
+      text-align: center; white-space: nowrap;
+    }
+    thead th.left { text-align: left; }
+    tbody tr { transition: background 0.1s; }
+    tbody tr.arrived-even { background: var(--white); }
+    tbody tr.arrived-odd { background: var(--pink-light); }
+    tbody tr.pending { background: #f0f0f0; opacity: 0.65; }
+    tbody td {
+      padding: 8px 12px; text-align: center;
+      border-bottom: 1px solid var(--pink-med);
+      color: var(--black); font-size: 13px;
+    }
+    tbody td.left { text-align: left; font-weight: 500; }
+    tbody td.cost { color: #8a5a00; font-weight: 700; }
+    tbody td.green { color: var(--green); font-weight: 700; }
+    tbody td.red-val { color: var(--red); font-weight: 700; }
+    tbody td.gray-val { color: var(--gray); font-weight: 700; }
+    tbody td.source-cell { text-align: left; color: var(--gray); }
+    tbody td.by-tara { color: var(--gray); font-weight: 600; font-size: 12px; }
+    tbody td.by-jamie { color: var(--pink-dark); font-weight: 600; font-size: 12px; }
+
+    tfoot td {
+      padding: 8px 12px; text-align: center;
+      background: var(--pink-med); font-weight: 700; font-size: 12px;
+      color: var(--gray);
+    }
+    tfoot td.total-cost { color: var(--red); }
+    tfoot td.total-rev { color: var(--green); }
+
+    /* Editable cell */
+    .editable {
+      cursor: pointer; padding: 2px 4px; border-radius: 4px;
+      display: block; min-width: 40px;
+      transition: background 0.1s;
+    }
+    .editable:hover { background: var(--pink-light); }
+    .editable.empty { color: var(--pink-dark); }
+    .editable input {
+      width: 100%; padding: 3px 6px;
+      border: 1.5px solid var(--pink-dark); border-radius: 5px;
+      background: var(--white); color: var(--black);
+      font-size: 13px; font-family: 'DM Sans', sans-serif;
+      outline: none;
+    }
+
+    /* Saving indicator */
+    .saving-indicator {
+      display: inline-block;
+      font-size: 11px;
+      color: var(--pink-dark);
+      margin-left: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .saving-indicator.visible { opacity: 1; }
+
+    /* Checkbox */
+    input[type="checkbox"] { accent-color: var(--pink-dark); width: 15px; height: 15px; cursor: pointer; }
+
+    /* ROI badge */
+    .roi { border-radius: 20px; padding: 3px 10px; font-weight: 700; font-size: 12px; white-space: nowrap; }
+
+    /* Add row button */
+    .add-btn {
+      padding: 8px 20px; background: var(--black); color: var(--white);
+      border: none; border-radius: 20px; cursor: pointer;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .add-btn:hover { opacity: 0.8; }
+
+    /* Delete button */
+    .del-btn {
+      background: none; border: none; color: var(--pink-dark);
+      cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;
+    }
+    .del-btn:hover { color: var(--red); }
+
+    /* Loading overlay */
+    #loading {
+      text-align: center; padding: 60px 20px;
+      font-size: 15px; color: var(--gray);
+      display: none;
+    }
+    #loading.visible { display: block; }
+
+    /* SVG logo */
+    svg.logo { flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <svg class="logo" width="72" height="65" viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="100" cy="85" rx="95" ry="75" fill="#E7C3CC"/>
+      <path d="M55,160 Q45,175 30,180 Q50,170 60,155 Z" fill="#E7C3CC"/>
+      <text x="100" y="75" text-anchor="middle" font-family="'Arial Black',sans-serif" font-weight="900" font-size="46" fill="#111" letter-spacing="1">HMO!</text>
+      <text x="100" y="118" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="34" fill="#111">shop</text>
+    </svg>
+    <div>
+      <h1>Hear Me Out! Shop</h1>
+      <p>Purchasing & Cost Analysis</p>
+    </div>
+  </div>
+
+  <div class="hint">💡 Click any cell to edit &nbsp;·&nbsp; Edits save to Google Sheets automatically &nbsp;·&nbsp; ✓ = arrived</div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-dot loading" id="statusDot"></div>
+    <span id="statusText">Loading data...</span>
+    <span class="saving-indicator" id="savingIndicator">Saving...</span>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-top" id="summaryTop"></div>
+  <div class="summary-bottom" id="summaryBottom"></div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <span>ROI badges:</span>
+    <span class="roi-badge" style="background:#d4f5e2;color:#2d7a4f">800%+</span>
+    <span class="roi-badge" style="background:#e2f0d0;color:#5a8a2f">500%+</span>
+    <span class="roi-badge" style="background:#fef3cd;color:#b07d10">200%+</span>
+    <span class="roi-badge" style="background:#fde0de;color:#c0392b">Low</span>
+    <span style="margin-left:6px">· Dimmed = not yet arrived &nbsp;·&nbsp; <span style="color:#c9929f;font-weight:700">Pink name</span> = Jamie's purchase</span>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="visible">Loading inventory from Google Sheets...</div>
+
+  <!-- Table container -->
+  <div id="tableContainer"></div>
+
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyLbQR1X49KFIoyiXiSKj6USys79zEU12-5Pf7Gvg-yjAKj_6TBA_B0IezM84yMUm2SQA/exec";
+const SHEET_ID = "1Dl7Lb3QObc_Ct2mj6E0aWf6OzFd-WhJUu1hSCBdNzKE";
+const PROXY = "https://corsproxy.io/?url=";
+
+const CSV_URLS = {
+  patches:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=0&single=true&output=csv",
+  hats:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=1392843448&single=true&output=csv",
+  hatchains: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=2128947898&single=true&output=csv",
+  retail:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=66568834&single=true&output=csv",
+  misc:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=132574097&single=true&output=csv",
+  booth:     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=333995977&single=true&output=csv",
+};
+
+const TABS = [
+  { key: "patches",   label: "Patches",       icon: "🪡" },
+  { key: "hats",      label: "Hats",           icon: "🧢" },
+  { key: "hatchains", label: "Hat Chains",     icon: "⛓️" },
+  { key: "retail",    label: "Retail Items",   icon: "👜" },
+  { key: "misc",      label: "Misc / Vinyl",   icon: "✨" },
+  { key: "booth",     label: "Booth Supplies", icon: "🏪" },
+];
+
+const NO_RETAIL_TABS = ["booth"];
+const RESELLABLE = ["patches","hats","hatchains","retail","misc"];
+
+let data = {};
+let activeTab = "patches";
+
+// ── CSV Parser ──────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
+  return lines.slice(1).map(line => {
+    const cols = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cols.push(cur); cur = ""; }
+      else { cur += c; }
+    }
+    cols.push(cur);
+    const obj = {};
+    headers.forEach((h, i) => {
+      let v = (cols[i] || "").trim().replace(/^"|"$/g, "");
+      if (h === "qty" || h === "id") v = parseInt(v) || 0;
+      else if (h === "wholesale" || h === "retail") v = v === "" ? null : parseFloat(v) || null;
+      else if (h === "arrived") v = v.toUpperCase() === "TRUE";
+      obj[h] = v;
+    });
+    return obj;
+  }).filter(r => r.id && r.item);
+}
+
+// ── Load all sheets ─────────────────────────────────────────
+async function loadAll() {
+  setStatus("loading", "Loading data from Google Sheets...");
+  document.getElementById("loading").classList.add("visible");
+  try {
+    const entries = await Promise.all(
+      Object.entries(CSV_URLS).map(async ([key, url]) => {
+        const res = await fetch(PROXY + encodeURIComponent(url));
+        const text = await res.text();
+        return [key, parseCSV(text)];
+      })
+    );
+    entries.forEach(([k, v]) => data[k] = v);
+    document.getElementById("loading").classList.remove("visible");
+    setStatus("live", "Live — synced with Google Sheets");
+    renderAll();
+  } catch (err) {
+    setStatus("error", "Error loading data. Check your CSV URLs.");
+    document.getElementById("loading").innerHTML = "⚠️ Could not load data from Google Sheets. Check your published CSV URLs.";
+  }
+}
+
+// ── Save a single cell ───────────────────────────────────────
+async function saveCell(sheet, id, field, value) {
+  const ind = document.getElementById("savingIndicator");
+  ind.classList.add("visible");
+  ind.textContent = "Saving...";
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheet, id, field, value }),
+    });
+    ind.textContent = "✓ Saved";
+    setTimeout(() => ind.classList.remove("visible"), 2000);
+  } catch (e) {
+    ind.textContent = "⚠️ Save failed";
+    setTimeout(() => ind.classList.remove("visible"), 3000);
+  }
+}
+
+// ── Status ───────────────────────────────────────────────────
+function setStatus(state, text) {
+  const dot = document.getElementById("statusDot");
+  dot.className = "status-dot " + state;
+  document.getElementById("statusText").textContent = text;
+}
+
+// ── Calculations ─────────────────────────────────────────────
+const cpu = r => r.wholesale / (r.qty || 1);
+const roiVal = r => {
+  if (!r.retail) return null;
+  return ((r.retail - cpu(r)) / cpu(r) * 100).toFixed(0);
+};
+const roiStyle = v => {
+  if (v === null) return "";
+  const n = parseFloat(v);
+  if (n >= 800) return "background:#d4f5e2;color:#2d7a4f";
+  if (n >= 500) return "background:#e2f0d0;color:#5a8a2f";
+  if (n >= 200) return "background:#fef3cd;color:#b07d10";
+  return "background:#fde0de;color:#c0392b";
+};
+
+// ── Summary ──────────────────────────────────────────────────
+function renderSummary() {
+  const all = Object.values(data).flat();
+  const resellAll = Object.entries(data).filter(([k]) => RESELLABLE.includes(k)).flatMap(([,v]) => v);
+  const totalSpent = all.reduce((s,r) => s + (r.wholesale||0), 0);
+  const arrivedSpent = all.filter(r=>r.arrived).reduce((s,r) => s+(r.wholesale||0), 0);
+  const pendingSpent = all.filter(r=>!r.arrived).reduce((s,r) => s+(r.wholesale||0), 0);
+  const withRetail = resellAll.filter(r => r.retail && r.qty);
+  const potRev = withRetail.reduce((s,r) => s + r.retail*r.qty, 0);
+  const potProfit = potRev - withRetail.reduce((s,r) => s+(r.wholesale||0), 0);
+  const taraSpent = all.filter(r=>r.purchaser==="Tara").reduce((s,r)=>s+(r.wholesale||0),0);
+  const jamieSpent = all.filter(r=>r.purchaser==="Jamie").reduce((s,r)=>s+(r.wholesale||0),0);
+  const taraPct = totalSpent > 0 ? (taraSpent/totalSpent*100).toFixed(0) : 50;
+  const jamiePct = totalSpent > 0 ? (jamieSpent/totalSpent*100).toFixed(0) : 50;
+
+  document.getElementById("summaryTop").innerHTML = `
+    <div class="card black"><div class="label">Total Invested</div><div class="value">$${totalSpent.toFixed(2)}</div></div>
+    <div class="card pink"><div class="label">Arrived</div><div class="value">$${arrivedSpent.toFixed(2)}</div></div>
+    <div class="card pink-med"><div class="label">Pending</div><div class="value">$${pendingSpent.toFixed(2)}</div></div>
+    <div class="card light"><div class="label">Potential Revenue</div><div class="value">${potRev > 0 ? '$'+potRev.toFixed(2) : '—'}</div></div>
+    <div class="card light profit"><div class="label">Potential Profit</div><div class="value">${potProfit > 0 ? '$'+potProfit.toFixed(2) : '—'}</div></div>
+  `;
+
+  document.getElementById("summaryBottom").innerHTML = `
+    <div class="purchaser-card tara">
+      <div class="avatar t">T</div>
+      <div><div class="p-label">Tara's Spend</div><div class="p-value">$${taraSpent.toFixed(2)}</div></div>
+    </div>
+    <div class="purchaser-card jamie">
+      <div class="avatar j">J</div>
+      <div><div class="p-label">Jamie's Spend</div><div class="p-value">$${jamieSpent.toFixed(2)}</div></div>
+    </div>
+    <div class="split-card">
+      <div class="split-label">Split</div>
+      <div class="split-bar">
+        <div class="split-bar-tara" style="width:${taraPct}%"></div>
+        <div class="split-bar-jamie"></div>
+      </div>
+      <div class="split-pct"><span>Tara ${taraPct}%</span><span>Jamie ${jamiePct}%</span></div>
+    </div>
+  `;
+}
+
+// ── Tabs ─────────────────────────────────────────────────────
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = TABS.map(t => `
+    <button class="tab-btn ${t.key === activeTab ? 'active' : ''}" onclick="switchTab('${t.key}')">
+      ${t.icon} ${t.label}
+      <span class="count">${(data[t.key]||[]).length}</span>
+    </button>
+  `).join("");
+}
+
+function switchTab(key) {
+  activeTab = key;
+  renderTabs();
+  renderTable();
+}
+
+// ── Table ────────────────────────────────────────────────────
+function renderTable() {
+  const rows = data[activeTab] || [];
+  const showRetail = !NO_RETAIL_TABS.includes(activeTab);
+  const totalWholesale = rows.reduce((s,r) => s+(r.wholesale||0), 0);
+  const totalItems = rows.reduce((s,r) => s+(r.qty||0), 0);
+  const totalRevenue = rows.filter(r=>r.retail&&r.qty).reduce((s,r)=>s+r.retail*r.qty, 0);
+
+  const retailCols = showRetail ? `<th>Retail</th><th>ROI %</th>` : "";
+  const totalRetailCols = showRetail ? `<td>—</td><td>—</td>` : "";
+
+  const rowsHTML = rows.map((r, i) => {
+    const c = cpu(r);
+    const rv = roiVal(r);
+    const margin = r.retail ? (r.retail - c) : null;
+    const rs = rv !== null ? roiStyle(rv) : "";
+    const rowClass = r.arrived ? (i%2===0 ? "arrived-even" : "arrived-odd") : "pending";
+    const byClass = r.purchaser === "Jamie" ? "by-jamie" : "by-tara";
+
+    const retailCells = showRetail ? `
+      <td>${editableCell(r, "retail", "number", "$")}</td>
+      <td>${rv !== null ? `<span class="roi" style="${rs}">${rv}%</span>` : '<span style="color:var(--pink-dark)">—</span>'}</td>
+    ` : "";
+
+    const marginColor = margin !== null ? (margin > 0 ? "green" : "red-val") : "gray-val";
+
+    return `
+      <tr class="${rowClass}" id="row-${activeTab}-${r.id}">
+        <td><input type="checkbox" ${r.arrived ? "checked" : ""} onchange="toggleArrived('${activeTab}',${r.id},this.checked)"/></td>
+        <td class="left">${editableCell(r, "item", "text")}</td>
+        <td>${editableCell(r, "qty", "number")}</td>
+        <td>${editableCell(r, "wholesale", "number", "$")}</td>
+        <td class="cost">$${c.toFixed(2)}</td>
+        ${retailCells}
+        <td class="${marginColor}">${margin !== null ? '$'+margin.toFixed(2) : '—'}</td>
+        <td class="source-cell">${editableCell(r, "source", "text")}</td>
+        <td class="${byClass}">${editableCell(r, "purchaser", "text")}</td>
+        <td><button class="del-btn" onclick="deleteRow('${activeTab}',${r.id})">×</button></td>
+      </tr>
+    `;
+  }).join("");
+
+  document.getElementById("tableContainer").innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>✓</th>
+            <th class="left">Item</th>
+            <th>Qty</th>
+            <th>Bundle Cost</th>
+            <th>Cost/Item</th>
+            ${showRetail ? "<th>Retail</th><th>ROI %</th>" : ""}
+            <th>Margin/Item</th>
+            <th class="left">Source</th>
+            <th>By</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="text-align:left">TOTALS</td>
+            <td>${totalItems}</td>
+            <td class="total-cost">$${totalWholesale.toFixed(2)}</td>
+            <td>—</td>
+            ${showRetail ? "<td>—</td><td>—</td>" : ""}
+            <td class="total-rev">${totalRevenue > 0 ? '$'+totalRevenue.toFixed(2)+' rev' : '—'}</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <button class="add-btn" onclick="addRow('${activeTab}')">+ Add Row</button>
+  `;
+}
+
+// ── Editable cell ─────────────────────────────────────────────
+function editableCell(r, field, type, prefix="") {
+  const val = r[field];
+  const display = val == null ? "—" : (type === "number" ? prefix + parseFloat(val).toFixed(2) : val);
+  const isEmpty = val == null || val === "";
+  return `<span class="editable${isEmpty?' empty':''}" onclick="startEdit(this,'${activeTab}',${r.id},'${field}','${type}','${prefix}')">${display}</span>`;
+}
+
+function startEdit(el, sheet, id, field, type, prefix) {
+  const row = data[sheet].find(r => r.id === id);
+  const cur = row[field];
+  const inputVal = cur == null ? "" : cur;
+  el.innerHTML = `<input type="${type==='number'?'number':'text'}" value="${inputVal}" onblur="commitEdit(this,'${sheet}',${id},'${field}','${type}')" onkeydown="if(event.key==='Enter')this.blur()" style="width:90%;padding:3px 6px;border:1.5px solid var(--pink-dark);border-radius:5px;background:white;color:black;font-size:13px;font-family:'DM Sans',sans-serif;outline:none"/>`;
+  el.querySelector("input").focus();
+}
+
+function commitEdit(input, sheet, id, field, type) {
+  const raw = input.value.trim();
+  const val = type === "number" ? (raw === "" ? null : parseFloat(raw)) : raw;
+  const row = data[sheet].find(r => r.id === id);
+  if (row) {
+    row[field] = val;
+    saveCell(sheet, id, field, val === null ? "" : val);
+  }
+  renderAll();
+}
+
+function toggleArrived(sheet, id, checked) {
+  const row = data[sheet].find(r => r.id === id);
+  if (row) {
+    row.arrived = checked;
+    saveCell(sheet, id, "arrived", checked ? "TRUE" : "FALSE");
+  }
+  renderAll();
+}
+
+function deleteRow(sheet, id) {
+  if (!confirm("Delete this row?")) return;
+  data[sheet] = data[sheet].filter(r => r.id !== id);
+  renderAll();
+}
+
+function addRow(sheet) {
+  const rows = data[sheet];
+  const newId = Math.max(...rows.map(r => r.id), 0) + 1;
+  rows.push({ id: newId, item: "New Item", qty: 1, wholesale: 0, retail: null, source: "", purchaser: "", arrived: false, notes: "" });
+  renderAll();
+  // Scroll to bottom of table
+  setTimeout(() => {
+    const el = document.getElementById(`row-${sheet}-${newId}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 100);
+}
+
+function renderAll() {
+  renderSummary();
+  renderTabs();
+  renderTable();
+}
+
+// ── Boot ─────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
