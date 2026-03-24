@@ -600,12 +600,56 @@ function editableCell(r, field, type, prefix="") {
   return `<span class="editable${isEmpty?' empty':''}" onclick="startEdit(this,'${activeTab}',${r.id},'${field}','${type}','${prefix}')">${display}</span>`;
 }
 
+// Ordered list of editable fields per row
+const EDIT_FIELDS = ["item","qty","wholesale","retail","qty_sold","source","purchaser"];
+
 function startEdit(el, sheet, id, field, type, prefix) {
   const row = data[sheet].find(r => r.id === id);
   const cur = row[field];
   const inputVal = cur == null ? "" : cur;
-  el.innerHTML = `<input type="${type==='number'?'number':'text'}" value="${inputVal}" onblur="commitEdit(this,'${sheet}',${id},'${field}','${type}')" onkeydown="if(event.key==='Enter')this.blur()" style="width:90%;padding:3px 6px;border:1.5px solid var(--pink-dark);border-radius:5px;background:white;color:black;font-size:13px;font-family:'DM Sans',sans-serif;outline:none"/>`;
+  el.innerHTML = `<input type="${type==='number'?'number':'text'}" value="${inputVal}"
+    onblur="commitEdit(this,'${sheet}',${id},'${field}','${type}')"
+    onkeydown="handleEditKey(event,this,'${sheet}',${id},'${field}','${type}')"
+    style="width:90%;padding:3px 6px;border:1.5px solid var(--pink-dark);border-radius:5px;background:white;color:black;font-size:13px;font-family:'DM Sans',sans-serif;outline:none"/>`;
   el.querySelector("input").focus();
+  el.querySelector("input").select();
+}
+
+function handleEditKey(e, input, sheet, id, field, type) {
+  if (e.key === "Enter") { e.preventDefault(); input.blur(); return; }
+  if (e.key === "Escape") { renderAll(); return; }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    // Commit current cell first
+    const raw = input.value.trim();
+    const val = type === "number" ? (raw === "" ? null : parseFloat(raw)) : raw;
+    const row = data[sheet].find(r => r.id === id);
+    if (row) { row[field] = val; saveCell(sheet, id, field, val === null ? "" : val); }
+
+    // Find next (or prev with Shift) editable field in this row
+    const fields = EDIT_FIELDS.filter(f => {
+      if ((f === "retail" || f === "qty_sold") && NO_RETAIL_TABS.includes(sheet)) return false;
+      return true;
+    });
+    const idx = fields.indexOf(field);
+    const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
+    if (nextIdx < 0 || nextIdx >= fields.length) { renderAll(); return; }
+    const nextField = fields[nextIdx];
+
+    // Re-render then trigger edit on next field
+    renderAll();
+    setTimeout(() => {
+      const rowEl = document.getElementById(`row-${sheet}-${id}`);
+      if (!rowEl) return;
+      const editables = rowEl.querySelectorAll(".editable");
+      // Find the editable span for nextField by re-checking field order in DOM
+      // Use a data attribute approach - find span whose onclick contains the field name
+      for (const span of editables) {
+        const oc = span.getAttribute("onclick") || "";
+        if (oc.includes(`'${nextField}'`)) { span.click(); break; }
+      }
+    }, 30);
+  }
 }
 
 function commitEdit(input, sheet, id, field, type) {
