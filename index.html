@@ -411,37 +411,39 @@ function showSaveFailed(ind) {
   setTimeout(() => ind.classList.remove("visible"), 3000);
 }
 
-// ── Core save via hidden iframe (bypasses CORS entirely) ────────
-// We queue saves and flush them; iframe GET requests always reach Apps Script
+// ── Save queue (batches rapid edits) ─────────────────────────
 const saveQueue = [];
 let saveTimer = null;
 
 function sendToSheet(payload) {
   saveQueue.push(payload);
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(flushSaveQueue, 300);
+  saveTimer = setTimeout(flushSaveQueue, 200);
 }
 
-function flushSaveQueue() {
+async function flushSaveQueue() {
   if (saveQueue.length === 0) return;
   const payload = saveQueue.shift();
   const ind = showSaving();
-  const url = SCRIPT_URL + "?data=" + encodeURIComponent(JSON.stringify(payload));
-
-  // Use a hidden iframe — this always works cross-origin, no CORS issues
-  const iframe = document.createElement("iframe");
-  iframe.style.display = "none";
-  iframe.src = url;
-  iframe.onload = () => {
-    showSaved(ind);
-    document.body.removeChild(iframe);
-    if (saveQueue.length > 0) flushSaveQueue();
-  };
-  iframe.onerror = () => {
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload),
+    });
+    const text = await res.text();
+    const json = JSON.parse(text);
+    if (json.success) {
+      showSaved(ind);
+    } else {
+      console.error("Sheet error:", json.error);
+      showSaveFailed(ind);
+    }
+  } catch (e) {
+    console.error("Fetch error:", e);
     showSaveFailed(ind);
-    document.body.removeChild(iframe);
-  };
-  document.body.appendChild(iframe);
+  }
+  if (saveQueue.length > 0) flushSaveQueue();
 }
 
 // ── Save a single cell ───────────────────────────────────────
