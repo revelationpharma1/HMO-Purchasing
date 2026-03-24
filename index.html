@@ -386,6 +386,8 @@ async function loadAll() {
       })
     );
     entries.forEach(([k, v]) => data[k] = v);
+    // Merge any locally cached edits on top of sheet data
+    mergeLocalCache();
     document.getElementById("loading").classList.remove("visible");
     setStatus("live", "Live — synced with Google Sheets");
     renderAll();
@@ -705,6 +707,7 @@ function commitEdit(input, sheet, id, field, type) {
   if (row) {
     row[field] = val;
     saveCell(sheet, id, field, val === null ? "" : val);
+    saveLocalCache();
   }
   renderAll();
 }
@@ -714,6 +717,7 @@ function toggleArrived(sheet, id, checked) {
   if (row) {
     row.arrived = checked;
     saveCell(sheet, id, "arrived", checked ? "TRUE" : "FALSE");
+    saveLocalCache();
   }
   renderAll();
 }
@@ -722,6 +726,8 @@ function deleteRow(sheet, id) {
   if (!confirm("Delete this row?")) return;
   data[sheet] = data[sheet].filter(r => r.id !== id);
   deleteRowRemote(sheet, id);
+  markDeletedInCache(sheet, id);
+  saveLocalCache();
   renderAll();
 }
 
@@ -731,6 +737,7 @@ function addRow(sheet) {
   const newRow = { id: newId, item: "New Item", qty: 1, wholesale: 0, retail: null, qty_sold: 0, source: "", purchaser: "", arrived: false, notes: "" };
   rows.push(newRow);
   saveNewRow(sheet, newRow);
+  saveLocalCache();
   renderAll();
   setTimeout(() => {
     const el = document.getElementById(`row-${sheet}-${newId}`);
@@ -742,6 +749,47 @@ function renderAll() {
   renderSummary();
   renderTabs();
   renderTable();
+}
+
+// ── Local cache (survives refresh until Sheet CSV updates) ──────
+function cacheKey() { return "hmo_data_v1"; }
+
+function saveLocalCache() {
+  try {
+    localStorage.setItem(cacheKey(), JSON.stringify(data));
+  } catch(e) {}
+}
+
+function mergeLocalCache() {
+  try {
+    const cached = localStorage.getItem(cacheKey());
+    if (!cached) return;
+    const local = JSON.parse(cached);
+    // For each tab, merge local rows on top of sheet rows by id
+    Object.keys(local).forEach(tab => {
+      if (!data[tab]) { data[tab] = local[tab]; return; }
+      const localMap = {};
+      local[tab].forEach(r => localMap[r.id] = r);
+      // Update existing rows with local edits
+      data[tab] = data[tab].map(r => localMap[r.id] ? { ...r, ...localMap[r.id] } : r);
+      // Add any new rows that exist locally but not in sheet yet
+      const sheetIds = new Set(data[tab].map(r => r.id));
+      local[tab].forEach(r => { if (!sheetIds.has(r.id)) data[tab].push(r); });
+      // Remove rows deleted locally
+      const deletedIds = (local["__deleted__"] || []);
+      if (deletedIds.length) data[tab] = data[tab].filter(r => !deletedIds.includes(`${tab}_${r.id}`));
+    });
+  } catch(e) {}
+}
+
+function markDeletedInCache(sheet, id) {
+  try {
+    const cached = localStorage.getItem(cacheKey());
+    const local = cached ? JSON.parse(cached) : {};
+    if (!local["__deleted__"]) local["__deleted__"] = [];
+    local["__deleted__"].push(`${sheet}_${id}`);
+    localStorage.setItem(cacheKey(), JSON.stringify(local));
+  } catch(e) {}
 }
 
 // ── Boot ─────────────────────────────────────────────────────
