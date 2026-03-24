@@ -411,18 +411,37 @@ function showSaveFailed(ind) {
   setTimeout(() => ind.classList.remove("visible"), 3000);
 }
 
-// ── Core save function (uses URL params to avoid CORS preflight) ─
-async function sendToSheet(payload) {
+// ── Core save via hidden iframe (bypasses CORS entirely) ────────
+// We queue saves and flush them; iframe GET requests always reach Apps Script
+const saveQueue = [];
+let saveTimer = null;
+
+function sendToSheet(payload) {
+  saveQueue.push(payload);
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSaveQueue, 300);
+}
+
+function flushSaveQueue() {
+  if (saveQueue.length === 0) return;
+  const payload = saveQueue.shift();
   const ind = showSaving();
-  try {
-    // Encode payload as a URL param — GET requests don't trigger CORS preflight
-    const url = SCRIPT_URL + "?data=" + encodeURIComponent(JSON.stringify(payload));
-    await fetch(url, { method: "GET", mode: "no-cors" });
-    // no-cors means we can't read the response, but the request goes through
+  const url = SCRIPT_URL + "?data=" + encodeURIComponent(JSON.stringify(payload));
+
+  // Use a hidden iframe — this always works cross-origin, no CORS issues
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = url;
+  iframe.onload = () => {
     showSaved(ind);
-  } catch (e) {
+    document.body.removeChild(iframe);
+    if (saveQueue.length > 0) flushSaveQueue();
+  };
+  iframe.onerror = () => {
     showSaveFailed(ind);
-  }
+    document.body.removeChild(iframe);
+  };
+  document.body.appendChild(iframe);
 }
 
 // ── Save a single cell ───────────────────────────────────────
