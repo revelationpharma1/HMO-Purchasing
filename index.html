@@ -262,6 +262,78 @@
 
     /* SVG logo */
     svg.logo { flex-shrink: 0; }
+
+    /* Search */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 12px 20px 12px 46px;
+      border: 2px solid var(--pink);
+      border-radius: 30px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--black);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-wrap input:focus {
+      border-color: var(--pink-dark);
+      box-shadow: 0 0 0 3px var(--pink-light);
+    }
+    .search-wrap input::placeholder { color: #bbb; }
+    .search-icon {
+      position: absolute;
+      left: 16px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: var(--pink-med);
+      border: none;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 13px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: var(--black);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .search-clear.visible { display: flex; }
+
+    /* Search results mode */
+    .search-results-label {
+      font-size: 12px;
+      color: var(--gray);
+      margin-bottom: 10px;
+      display: none;
+    }
+    .search-results-label.visible { display: block; }
+    .search-highlight {
+      background: #fff3b0;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+    .search-tab-header {
+      background: var(--pink-med);
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--black);
+      border-bottom: 1px solid var(--pink);
+    }
   </style>
 </head>
 <body>
@@ -282,6 +354,14 @@
   </div>
 
   <div class="hint">💡 Click any cell to edit &nbsp;·&nbsp; Edits save to Google Sheets automatically &nbsp;·&nbsp; ✓ = arrived</div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search all inventory... (e.g. 'stars', 'Jamie', 'TEMU')" oninput="handleSearch(this.value)" />
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">×</button>
+  </div>
+  <div class="search-results-label" id="searchResultsLabel"></div>
 
   <!-- Status -->
   <div class="status-bar">
@@ -641,11 +721,12 @@ function renderTable() {
 }
 
 // ── Editable cell ─────────────────────────────────────────────
-function editableCell(r, field, type, prefix="") {
+function editableCell(r, field, type, prefix="", sheetOverride=null) {
+  const sheet = sheetOverride || activeTab;
   const val = r[field];
   const display = val == null ? "—" : (type === "number" ? prefix + parseFloat(val).toFixed(2) : val);
   const isEmpty = val == null || val === "";
-  return `<span class="editable${isEmpty?' empty':''}" onclick="startEdit(this,'${activeTab}',${r.id},'${field}','${type}','${prefix}')">${display}</span>`;
+  return `<span class="editable${isEmpty?' empty':''}" onclick="startEdit(this,'${sheet}',${r.id},'${field}','${type}','${prefix}')">${display}</span>`;
 }
 
 // Ordered list of editable fields per row
@@ -790,6 +871,144 @@ function markDeletedInCache(sheet, id) {
     local["__deleted__"].push(`${sheet}_${id}`);
     localStorage.setItem(cacheKey(), JSON.stringify(local));
   } catch(e) {}
+}
+
+// ── Search ───────────────────────────────────────────────────
+let searchQuery = "";
+
+function handleSearch(val) {
+  searchQuery = val.trim().toLowerCase();
+  const clearBtn = document.getElementById("searchClear");
+  clearBtn.classList.toggle("visible", searchQuery.length > 0);
+
+  if (searchQuery.length === 0) {
+    clearSearch();
+    return;
+  }
+
+  // Hide tabs/legend, show search results across all tabs
+  document.getElementById("tabs").style.display = "none";
+  document.querySelector(".legend").style.display = "none";
+
+  const label = document.getElementById("searchResultsLabel");
+  label.classList.add("visible");
+  renderSearchResults();
+}
+
+function clearSearch() {
+  searchQuery = "";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchClear").classList.remove("visible");
+  document.getElementById("searchResultsLabel").classList.remove("visible");
+  document.getElementById("tabs").style.display = "";
+  document.querySelector(".legend").style.display = "";
+  renderTable();
+}
+
+function highlight(text, query) {
+  if (!query) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${escaped})`, "gi");
+  return String(text).replace(re, '<span class="search-highlight">$1</span>');
+}
+
+function renderSearchResults() {
+  const q = searchQuery;
+  const label = document.getElementById("searchResultsLabel");
+
+  // Search across all tabs
+  let totalMatches = 0;
+  let html = "";
+
+  TABS.forEach(tab => {
+    const rows = (data[tab.key] || []).filter(r => {
+      return (
+        (r.item && r.item.toLowerCase().includes(q)) ||
+        (r.source && r.source.toLowerCase().includes(q)) ||
+        (r.purchaser && r.purchaser.toLowerCase().includes(q)) ||
+        (r.notes && r.notes.toLowerCase().includes(q)) ||
+        (String(r.retail || "").includes(q)) ||
+        (String(r.wholesale || "").includes(q))
+      );
+    });
+
+    if (rows.length === 0) return;
+    totalMatches += rows.length;
+
+    const showRetail = !NO_RETAIL_TABS.includes(tab.key);
+
+    const rowsHTML = rows.map((r, i) => {
+      const c = cpu(r);
+      const rv = roiVal(r);
+      const margin = r.retail ? (r.retail - c) : null;
+      const rs = rv !== null ? roiStyle(rv) : "";
+      const rowClass = r.arrived ? (i%2===0 ? "arrived-even" : "arrived-odd") : "pending";
+      const byClass = r.purchaser === "Jamie" ? "by-jamie" : "by-tara";
+      const qtySold = r.qty_sold || 0;
+      const qtyLeft = (r.qty || 0) - qtySold;
+      const actualRev = r.retail && qtySold > 0 ? r.retail * qtySold : null;
+      const marginColor = margin !== null ? (margin > 0 ? "green" : "red-val") : "gray-val";
+      const soldCellStyle = qtySold > 0 ? 'style="color:#2d7a4f;font-weight:700"' : '';
+      const leftStyle = qtyLeft < 0 ? 'style="color:#c0392b;font-weight:700"' : qtyLeft === 0 && r.qty > 0 ? 'style="color:#888"' : '';
+
+      const retailCells = showRetail ? `
+        <td>${editableCell(r, "retail", "number", "$", tab.key)}</td>
+        <td>${rv !== null ? `<span class="roi" style="${rs}">${rv}%</span>` : '<span style="color:var(--pink-dark)">—</span>'}</td>
+      ` : "";
+
+      return `
+        <tr class="${rowClass}" id="row-${tab.key}-${r.id}">
+          <td><input type="checkbox" ${r.arrived ? "checked" : ""} onchange="toggleArrived('${tab.key}',${r.id},this.checked)"/></td>
+          <td class="left">${highlight(editableCell(r, "item", "text", "", tab.key), q)}</td>
+          <td>${editableCell(r, "qty", "number", "", tab.key)}</td>
+          <td>${editableCell(r, "wholesale", "number", "$", tab.key)}</td>
+          <td class="cost">$${c.toFixed(2)}</td>
+          ${retailCells}
+          <td class="${marginColor}">${margin !== null ? '$'+margin.toFixed(2) : '—'}</td>
+          <td ${soldCellStyle}>${editableCell(r, "qty_sold", "number", "", tab.key)}</td>
+          <td ${leftStyle}>${qtyLeft}</td>
+          <td style="color:#2d7a4f;font-weight:700">${actualRev !== null ? '$'+actualRev.toFixed(2) : '—'}</td>
+          <td class="source-cell">${highlight(r.source || '—', q)}</td>
+          <td class="${byClass}">${highlight(r.purchaser || '—', q)}</td>
+          <td><button class="del-btn" onclick="deleteRow('${tab.key}',${r.id})">×</button></td>
+        </tr>
+      `;
+    }).join("");
+
+    html += `
+      <div class="search-tab-header">${tab.icon} ${tab.label} — ${rows.length} result${rows.length !== 1 ? 's' : ''}</div>
+      <div class="table-wrap" style="border-radius:0;border-top:none;margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr>
+              <th>✓</th>
+              <th class="left">Item</th>
+              <th>Qty</th>
+              <th>Bundle Cost</th>
+              <th>Cost/Item</th>
+              ${showRetail ? "<th>Retail</th><th>ROI %</th>" : ""}
+              <th>Margin/Item</th>
+              <th style="background:#1a3d2b;color:#7ecfa0">Sold</th>
+              <th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>
+              <th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>
+              <th class="left">Source</th>
+              <th>By</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      </div>
+    `;
+  });
+
+  label.textContent = totalMatches > 0
+    ? `${totalMatches} result${totalMatches !== 1 ? 's' : ''} for "${searchQuery}" across all tabs`
+    : `No results found for "${searchQuery}"`;
+
+  document.getElementById("tableContainer").innerHTML = totalMatches > 0
+    ? `<div style="border-radius:10px;overflow:hidden;border:1px solid var(--pink-med)">${html}</div>`
+    : `<div style="text-align:center;padding:60px;color:var(--gray);font-size:15px">😕 No items found matching "<strong>${searchQuery}</strong>"</div>`;
 }
 
 // ── Boot ─────────────────────────────────────────────────────
