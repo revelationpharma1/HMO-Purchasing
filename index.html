@@ -610,7 +610,7 @@ let activeTab = "patches";
 
 // ── CSV Parser ──────────────────────────────────────────────
 function parseCSV(text) {
-  const lines = text.trim().split("\n");
+  const lines = text.trim().split(/\r?\n/);
   const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
   return lines.slice(1).map(line => {
     const cols = [];
