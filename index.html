@@ -31,7 +31,6 @@
 
     .container { max-width: 1200px; margin: 0 auto; }
 
-    /* Header */
     .header {
       display: flex;
       align-items: center;
@@ -57,7 +56,6 @@
 
     .hint { font-size: 12px; color: var(--gray); margin: 10px 0 20px; }
 
-    /* Status bar */
     .status-bar {
       display: flex;
       align-items: center;
@@ -76,7 +74,6 @@
     .status-dot.error { background: var(--red); }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-    /* Summary cards */
     .summary-top {
       display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;
     }
@@ -106,7 +103,6 @@
     .card.light .value { color: var(--black); }
     .card.light.profit .value { color: var(--green); }
 
-    /* Purchaser cards */
     .purchaser-card {
       flex: 1 1 200px;
       background: var(--white);
@@ -144,7 +140,6 @@
     .split-pct span:first-child { color: var(--black); }
     .split-pct span:last-child { color: var(--pink-dark); }
 
-    /* Tabs */
     .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
     .tab-btn {
       padding: 9px 18px; border-radius: 20px;
@@ -162,11 +157,9 @@
     }
     .tab-btn.active .count { background: var(--pink); }
 
-    /* Legend */
     .legend { display: flex; gap: 12px; font-size: 11px; color: var(--gray); flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
     .roi-badge { border-radius: 20px; padding: 2px 10px; font-weight: 700; font-size: 11px; }
 
-    /* Table */
     .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--pink-med); margin-bottom: 14px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th {
@@ -202,7 +195,6 @@
     tfoot td.total-cost { color: var(--red); }
     tfoot td.total-rev { color: var(--green); }
 
-    /* Editable cell */
     .editable {
       cursor: pointer; padding: 2px 4px; border-radius: 4px;
       display: block; min-width: 40px;
@@ -218,7 +210,6 @@
       outline: none;
     }
 
-    /* Saving indicator */
     .saving-indicator {
       display: inline-block;
       font-size: 11px;
@@ -229,13 +220,10 @@
     }
     .saving-indicator.visible { opacity: 1; }
 
-    /* Checkbox */
     input[type="checkbox"] { accent-color: var(--pink-dark); width: 15px; height: 15px; cursor: pointer; }
 
-    /* ROI badge */
     .roi { border-radius: 20px; padding: 3px 10px; font-weight: 700; font-size: 12px; white-space: nowrap; }
 
-    /* Add row button */
     .add-btn {
       padding: 8px 20px; background: var(--black); color: var(--white);
       border: none; border-radius: 20px; cursor: pointer;
@@ -245,14 +233,12 @@
     }
     .add-btn:hover { opacity: 0.8; }
 
-    /* Delete button */
     .del-btn {
       background: none; border: none; color: var(--pink-dark);
       cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;
     }
     .del-btn:hover { color: var(--red); }
 
-    /* Loading overlay */
     #loading {
       text-align: center; padding: 60px 20px;
       font-size: 15px; color: var(--gray);
@@ -260,10 +246,8 @@
     }
     #loading.visible { display: block; }
 
-    /* SVG logo */
     svg.logo { flex-shrink: 0; }
 
-    /* Contacts Sidebar */
     .contacts-btn {
       position: fixed;
       top: 24px; right: 24px;
@@ -419,7 +403,6 @@
       color: var(--gray); font-size: 14px;
     }
 
-    /* Search */
     .search-wrap {
       position: relative;
       margin-bottom: 20px;
@@ -467,7 +450,6 @@
     }
     .search-clear.visible { display: flex; }
 
-    /* Search results mode */
     .search-results-label {
       font-size: 12px;
       color: var(--gray);
@@ -495,7 +477,6 @@
 <body>
 <div class="container">
 
-  <!-- Header -->
   <div class="header">
     <svg class="logo" width="72" height="65" viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="100" cy="85" rx="95" ry="75" fill="#E7C3CC"/>
@@ -511,7 +492,6 @@
 
   <div class="hint">💡 Click any cell to edit &nbsp;·&nbsp; Edits save to Google Sheets automatically &nbsp;·&nbsp; ✓ = arrived</div>
 
-  <!-- Search -->
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="Search all inventory... (e.g. 'stars', 'Jamie', 'TEMU')" oninput="handleSearch(this.value)" />
@@ -519,21 +499,17 @@
   </div>
   <div class="search-results-label" id="searchResultsLabel"></div>
 
-  <!-- Status -->
   <div class="status-bar">
     <div class="status-dot loading" id="statusDot"></div>
     <span id="statusText">Loading data...</span>
     <span class="saving-indicator" id="savingIndicator">Saving...</span>
   </div>
 
-  <!-- Summary -->
   <div class="summary-top" id="summaryTop"></div>
   <div class="summary-bottom" id="summaryBottom"></div>
 
-  <!-- Tabs -->
   <div class="tabs" id="tabs"></div>
 
-  <!-- Legend -->
   <div class="legend">
     <span>ROI badges:</span>
     <span class="roi-badge" style="background:#d4f5e2;color:#2d7a4f">800%+</span>
@@ -543,21 +519,15 @@
     <span style="margin-left:6px">· Dimmed = not yet arrived &nbsp;·&nbsp; <span style="color:#c9929f;font-weight:700">Pink name</span> = Jamie's purchase</span>
   </div>
 
-  <!-- Loading -->
   <div id="loading" class="visible">Loading inventory from Google Sheets...</div>
-
-  <!-- Table container -->
   <div id="tableContainer"></div>
 
 </div>
 
-<!-- Contacts Button -->
 <button class="contacts-btn" onclick="openSidebar()">📋 Contacts</button>
 
-<!-- Sidebar Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-<!-- Sidebar -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <h2>📋 Contact List</h2>
@@ -574,8 +544,6 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyLbQR1X49KFIoyiXiSKj6USys79zEU12-5Pf7Gvg-yjAKj_6TBA_B0IezM84yMUm2SQA/exec";
-const SHEET_ID = "1Dl7Lb3QObc_Ct2mj6E0aWf6OzFd-WhJUu1hSCBdNzKE";
-const PROXY = "";
 const CONTACTS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjTjv1tUI-vmmakbvW6CkAJk9Wbro67NIK1VodCrvxKCqDVrEDRRDIyzKtFhYrTogHpedIsQX1xYW3/pub?gid=77821631&single=true&output=csv";
 
 const CSV_URLS = {
@@ -599,7 +567,7 @@ const TABS = [
   { key: "booth",     label: "Booth Supplies", icon: "🏪" },
   { key: "jewelry",   label: "Jewelry",        icon: "💎" },
   { key: "bizfees",   label: "Business Fees",  icon: "💼" },
-  { key: "drinkware", label: "Drinkware",       icon: "🥤" },
+  { key: "drinkware", label: "Drinkware",      icon: "🥤" },
 ];
 
 const NO_RETAIL_TABS = ["booth", "bizfees"];
@@ -642,24 +610,24 @@ async function loadAll() {
     const entries = await Promise.all(
       Object.entries(CSV_URLS).map(async ([key, url]) => {
         if (!url) return [key, []];
-        const res = await fetch(PROXY + encodeURIComponent(url));
+        const res = await fetch(url);
         const text = await res.text();
         return [key, parseCSV(text)];
       })
     );
     entries.forEach(([k, v]) => data[k] = v);
-    // Merge any locally cached edits on top of sheet data
     mergeLocalCache();
     document.getElementById("loading").classList.remove("visible");
     setStatus("live", "Live — synced with Google Sheets");
     renderAll();
   } catch (err) {
+    console.error(err);
     setStatus("error", "Error loading data. Check your CSV URLs.");
     document.getElementById("loading").innerHTML = "⚠️ Could not load data from Google Sheets. Check your published CSV URLs.";
   }
 }
 
-// ── Saving indicator helper ──────────────────────────────────
+// ── Saving indicator ─────────────────────────────────────────
 function showSaving() {
   const ind = document.getElementById("savingIndicator");
   ind.classList.add("visible");
@@ -675,7 +643,6 @@ function showSaveFailed(ind) {
   setTimeout(() => ind.classList.remove("visible"), 3000);
 }
 
-// ── Save queue (batches rapid edits) ─────────────────────────
 const saveQueue = [];
 let saveTimer = null;
 
@@ -697,12 +664,7 @@ async function flushSaveQueue() {
     });
     const text = await res.text();
     const json = JSON.parse(text);
-    if (json.success) {
-      showSaved(ind);
-    } else {
-      console.error("Sheet error:", json.error);
-      showSaveFailed(ind);
-    }
+    if (json.success) { showSaved(ind); } else { showSaveFailed(ind); }
   } catch (e) {
     console.error("Fetch error:", e);
     showSaveFailed(ind);
@@ -710,22 +672,10 @@ async function flushSaveQueue() {
   if (saveQueue.length > 0) flushSaveQueue();
 }
 
-// ── Save a single cell ───────────────────────────────────────
-function saveCell(sheet, id, field, value) {
-  sendToSheet({ sheet, id, field, value });
-}
+function saveCell(sheet, id, field, value) { sendToSheet({ sheet, id, field, value }); }
+function saveNewRow(sheet, rowData) { sendToSheet({ action: "addRow", sheet, rowData }); }
+function deleteRowRemote(sheet, id) { sendToSheet({ action: "deleteRow", sheet, id }); }
 
-// ── Save a new row ────────────────────────────────────────────
-function saveNewRow(sheet, rowData) {
-  sendToSheet({ action: "addRow", sheet, rowData });
-}
-
-// ── Delete a row ──────────────────────────────────────────────
-function deleteRowRemote(sheet, id) {
-  sendToSheet({ action: "deleteRow", sheet, id });
-}
-
-// ── Status ───────────────────────────────────────────────────
 function setStatus(state, text) {
   const dot = document.getElementById("statusDot");
   dot.className = "status-dot " + state;
@@ -817,10 +767,6 @@ function renderTable() {
   const showRetail = !NO_RETAIL_TABS.includes(activeTab);
   const totalWholesale = rows.reduce((s,r) => s+(r.wholesale||0), 0);
   const totalItems = rows.reduce((s,r) => s+(r.qty||0), 0);
-  const totalRevenue = rows.filter(r=>r.retail&&r.qty).reduce((s,r)=>s+r.retail*r.qty, 0);
-
-  const retailCols = showRetail ? `<th>Retail</th><th>ROI %</th>` : "";
-  const totalRetailCols = showRetail ? `<td>—</td><td>—</td>` : "";
 
   const rowsHTML = rows.map((r, i) => {
     const c = cpu(r);
@@ -832,15 +778,14 @@ function renderTable() {
     const qtySold = r.qty_sold || 0;
     const qtyLeft = (r.qty || 0) - qtySold;
     const actualRev = r.retail && qtySold > 0 ? r.retail * qtySold : null;
+    const marginColor = margin !== null ? (margin > 0 ? "green" : "red-val") : "gray-val";
+    const soldCellStyle = qtySold > 0 ? 'style="color:#2d7a4f;font-weight:700"' : '';
+    const leftStyle = qtyLeft < 0 ? 'style="color:#c0392b;font-weight:700"' : qtyLeft === 0 && r.qty > 0 ? 'style="color:#888"' : '';
 
     const retailCells = showRetail ? `
       <td>${editableCell(r, "retail", "number", "$")}</td>
       <td>${rv !== null ? `<span class="roi" style="${rs}">${rv}%</span>` : '<span style="color:var(--pink-dark)">—</span>'}</td>
     ` : "";
-
-    const marginColor = margin !== null ? (margin > 0 ? "green" : "red-val") : "gray-val";
-    const soldCellStyle = qtySold > 0 ? 'style="color:#2d7a4f;font-weight:700"' : '';
-    const leftStyle = qtyLeft < 0 ? 'style="color:#c0392b;font-weight:700"' : qtyLeft === 0 && r.qty > 0 ? 'style="color:#888"' : '';
 
     return `
       <tr class="${rowClass}" id="row-${activeTab}-${r.id}">
@@ -892,7 +837,7 @@ function renderTable() {
             <td>—</td>
             <td style="color:#2d7a4f;font-weight:700">${rows.reduce((s,r)=>s+(r.qty_sold||0),0)}</td>
             <td>—</td>
-            <td style="color:#2d7a4f;font-weight:700">${rows.filter(r=>r.retail&&r.qty_sold>0).reduce((s,r)=>s+r.retail*(r.qty_sold||0),0).toFixed(2) > 0 ? '$'+rows.filter(r=>r.retail&&r.qty_sold>0).reduce((s,r)=>s+r.retail*(r.qty_sold||0),0).toFixed(2) : '—'}</td>
+            <td style="color:#2d7a4f;font-weight:700">${(()=>{const v=rows.filter(r=>r.retail&&r.qty_sold>0).reduce((s,r)=>s+r.retail*(r.qty_sold||0),0);return v>0?'$'+v.toFixed(2):'—'})()}</td>
             <td colspan="3"></td>
           </tr>
         </tfoot>
@@ -911,7 +856,6 @@ function editableCell(r, field, type, prefix="", sheetOverride=null) {
   return `<span class="editable${isEmpty?' empty':''}" onclick="startEdit(this,'${sheet}',${r.id},'${field}','${type}','${prefix}')">${display}</span>`;
 }
 
-// Ordered list of editable fields per row
 const EDIT_FIELDS = ["item","qty","wholesale","retail","qty_sold","source","purchaser"];
 
 function startEdit(el, sheet, id, field, type, prefix) {
@@ -931,13 +875,10 @@ function handleEditKey(e, input, sheet, id, field, type) {
   if (e.key === "Escape") { renderAll(); return; }
   if (e.key === "Tab") {
     e.preventDefault();
-    // Commit current cell first
     const raw = input.value.trim();
     const val = type === "number" ? (raw === "" ? null : parseFloat(raw)) : raw;
     const row = data[sheet].find(r => r.id === id);
     if (row) { row[field] = val; saveCell(sheet, id, field, val === null ? "" : val); }
-
-    // Find next (or prev with Shift) editable field in this row
     const fields = EDIT_FIELDS.filter(f => {
       if ((f === "retail" || f === "qty_sold") && NO_RETAIL_TABS.includes(sheet)) return false;
       return true;
@@ -946,18 +887,12 @@ function handleEditKey(e, input, sheet, id, field, type) {
     const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
     if (nextIdx < 0 || nextIdx >= fields.length) { renderAll(); return; }
     const nextField = fields[nextIdx];
-
-    // Re-render then trigger edit on next field
     renderAll();
     setTimeout(() => {
       const rowEl = document.getElementById(`row-${sheet}-${id}`);
       if (!rowEl) return;
-      const editables = rowEl.querySelectorAll(".editable");
-      // Find the editable span for nextField by re-checking field order in DOM
-      // Use a data attribute approach - find span whose onclick contains the field name
-      for (const span of editables) {
-        const oc = span.getAttribute("onclick") || "";
-        if (oc.includes(`'${nextField}'`)) { span.click(); break; }
+      for (const span of rowEl.querySelectorAll(".editable")) {
+        if ((span.getAttribute("onclick")||"").includes(`'${nextField}'`)) { span.click(); break; }
       }
     }, 30);
   }
@@ -967,21 +902,13 @@ function commitEdit(input, sheet, id, field, type) {
   const raw = input.value.trim();
   const val = type === "number" ? (raw === "" ? null : parseFloat(raw)) : raw;
   const row = data[sheet].find(r => r.id === id);
-  if (row) {
-    row[field] = val;
-    saveCell(sheet, id, field, val === null ? "" : val);
-    saveLocalCache();
-  }
+  if (row) { row[field] = val; saveCell(sheet, id, field, val === null ? "" : val); saveLocalCache(); }
   renderAll();
 }
 
 function toggleArrived(sheet, id, checked) {
   const row = data[sheet].find(r => r.id === id);
-  if (row) {
-    row.arrived = checked;
-    saveCell(sheet, id, "arrived", checked ? "TRUE" : "FALSE");
-    saveLocalCache();
-  }
+  if (row) { row.arrived = checked; saveCell(sheet, id, "arrived", checked ? "TRUE" : "FALSE"); saveLocalCache(); }
   renderAll();
 }
 
@@ -1014,13 +941,11 @@ function renderAll() {
   renderTable();
 }
 
-// ── Local cache (survives refresh until Sheet CSV updates) ──────
+// ── Local cache ───────────────────────────────────────────────
 function cacheKey() { return "hmo_data_v1"; }
 
 function saveLocalCache() {
-  try {
-    localStorage.setItem(cacheKey(), JSON.stringify(data));
-  } catch(e) {}
+  try { localStorage.setItem(cacheKey(), JSON.stringify(data)); } catch(e) {}
 }
 
 function mergeLocalCache() {
@@ -1028,17 +953,13 @@ function mergeLocalCache() {
     const cached = localStorage.getItem(cacheKey());
     if (!cached) return;
     const local = JSON.parse(cached);
-    // For each tab, merge local rows on top of sheet rows by id
     Object.keys(local).forEach(tab => {
       if (!data[tab]) { data[tab] = local[tab]; return; }
       const localMap = {};
       local[tab].forEach(r => localMap[r.id] = r);
-      // Update existing rows with local edits
       data[tab] = data[tab].map(r => localMap[r.id] ? { ...r, ...localMap[r.id] } : r);
-      // Add any new rows that exist locally but not in sheet yet
       const sheetIds = new Set(data[tab].map(r => r.id));
       local[tab].forEach(r => { if (!sheetIds.has(r.id)) data[tab].push(r); });
-      // Remove rows deleted locally
       const deletedIds = (local["__deleted__"] || []);
       if (deletedIds.length) data[tab] = data[tab].filter(r => !deletedIds.includes(`${tab}_${r.id}`));
     });
@@ -1055,25 +976,16 @@ function markDeletedInCache(sheet, id) {
   } catch(e) {}
 }
 
-// ── Search ───────────────────────────────────────────────────
+// ── Search ────────────────────────────────────────────────────
 let searchQuery = "";
 
 function handleSearch(val) {
   searchQuery = val.trim().toLowerCase();
-  const clearBtn = document.getElementById("searchClear");
-  clearBtn.classList.toggle("visible", searchQuery.length > 0);
-
-  if (searchQuery.length === 0) {
-    clearSearch();
-    return;
-  }
-
-  // Hide tabs/legend, show search results across all tabs
+  document.getElementById("searchClear").classList.toggle("visible", searchQuery.length > 0);
+  if (searchQuery.length === 0) { clearSearch(); return; }
   document.getElementById("tabs").style.display = "none";
   document.querySelector(".legend").style.display = "none";
-
-  const label = document.getElementById("searchResultsLabel");
-  label.classList.add("visible");
+  document.getElementById("searchResultsLabel").classList.add("visible");
   renderSearchResults();
 }
 
@@ -1090,33 +1002,25 @@ function clearSearch() {
 function highlight(text, query) {
   if (!query) return text;
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`(${escaped})`, "gi");
-  return String(text).replace(re, '<span class="search-highlight">$1</span>');
+  return String(text).replace(new RegExp(`(${escaped})`, "gi"), '<span class="search-highlight">$1</span>');
 }
 
 function renderSearchResults() {
   const q = searchQuery;
-  const label = document.getElementById("searchResultsLabel");
-
-  // Search across all tabs
   let totalMatches = 0;
   let html = "";
 
   TABS.forEach(tab => {
-    const rows = (data[tab.key] || []).filter(r => {
-      return (
-        (r.item && r.item.toLowerCase().includes(q)) ||
-        (r.source && r.source.toLowerCase().includes(q)) ||
-        (r.purchaser && r.purchaser.toLowerCase().includes(q)) ||
-        (r.notes && r.notes.toLowerCase().includes(q)) ||
-        (String(r.retail || "").includes(q)) ||
-        (String(r.wholesale || "").includes(q))
-      );
-    });
-
+    const rows = (data[tab.key] || []).filter(r =>
+      (r.item && r.item.toLowerCase().includes(q)) ||
+      (r.source && r.source.toLowerCase().includes(q)) ||
+      (r.purchaser && r.purchaser.toLowerCase().includes(q)) ||
+      (r.notes && r.notes.toLowerCase().includes(q)) ||
+      (String(r.retail || "").includes(q)) ||
+      (String(r.wholesale || "").includes(q))
+    );
     if (rows.length === 0) return;
     totalMatches += rows.length;
-
     const showRetail = !NO_RETAIL_TABS.includes(tab.key);
 
     const rowsHTML = rows.map((r, i) => {
@@ -1132,7 +1036,6 @@ function renderSearchResults() {
       const marginColor = margin !== null ? (margin > 0 ? "green" : "red-val") : "gray-val";
       const soldCellStyle = qtySold > 0 ? 'style="color:#2d7a4f;font-weight:700"' : '';
       const leftStyle = qtyLeft < 0 ? 'style="color:#c0392b;font-weight:700"' : qtyLeft === 0 && r.qty > 0 ? 'style="color:#888"' : '';
-
       const retailCells = showRetail ? `
         <td>${editableCell(r, "retail", "number", "$", tab.key)}</td>
         <td>${rv !== null ? `<span class="roi" style="${rs}">${rv}%</span>` : '<span style="color:var(--pink-dark)">—</span>'}</td>
@@ -1161,30 +1064,22 @@ function renderSearchResults() {
       <div class="search-tab-header">${tab.icon} ${tab.label} — ${rows.length} result${rows.length !== 1 ? 's' : ''}</div>
       <div class="table-wrap" style="border-radius:0;border-top:none;margin-bottom:16px">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr>
-              <th>✓</th>
-              <th class="left">Item</th>
-              <th>Qty</th>
-              <th>Bundle Cost</th>
-              <th>Cost/Item</th>
-              ${showRetail ? "<th>Retail</th><th>ROI %</th>" : ""}
-              <th>Margin/Item</th>
-              <th style="background:#1a3d2b;color:#7ecfa0">Sold</th>
-              <th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>
-              <th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>
-              <th class="left">Source</th>
-              <th>By</th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th>✓</th><th class="left">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>
+            ${showRetail ? "<th>Retail</th><th>ROI %</th>" : ""}
+            <th>Margin/Item</th>
+            <th style="background:#1a3d2b;color:#7ecfa0">Sold</th>
+            <th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>
+            <th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>
+            <th class="left">Source</th><th>By</th><th></th>
+          </tr></thead>
           <tbody>${rowsHTML}</tbody>
         </table>
       </div>
     `;
   });
 
-  label.textContent = totalMatches > 0
+  document.getElementById("searchResultsLabel").textContent = totalMatches > 0
     ? `${totalMatches} result${totalMatches !== 1 ? 's' : ''} for "${searchQuery}" across all tabs`
     : `No results found for "${searchQuery}"`;
 
@@ -1193,23 +1088,20 @@ function renderSearchResults() {
     : `<div style="text-align:center;padding:60px;color:var(--gray);font-size:15px">😕 No items found matching "<strong>${searchQuery}</strong>"</div>`;
 }
 
-// ── Contacts ─────────────────────────────────────────────────
+// ── Contacts ──────────────────────────────────────────────────
 const CONTACTS_KEY = "hmo_contacts_v1";
 let contactsData = [];
 
-function loadContacts() {
-  return contactsData;
-}
+function loadContacts() { return contactsData; }
 
 function saveContacts(contacts) {
   contactsData = contacts;
-  // Also persist locally so edits survive until Sheet cache refreshes
   try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts)); } catch(e) {}
 }
 
 async function loadContactsFromSheet() {
   try {
-    const res = await fetch(PROXY + encodeURIComponent(CONTACTS_CSV));
+    const res = await fetch(CONTACTS_CSV);
     const text = await res.text();
     const lines = text.trim().split(/\r?\n/);
     if (lines.length < 2) { loadContactsFromCache(); return; }
@@ -1230,12 +1122,10 @@ async function loadContactsFromSheet() {
       return obj;
     }).filter(r => r.id && r.venue);
 
-    // Merge with local cache edits on top
     const cached = getCachedContacts();
     const cachedMap = {};
     cached.forEach(c => cachedMap[c.id] = c);
     contactsData = parsed.map(r => cachedMap[r.id] ? { ...r, ...cachedMap[r.id] } : r);
-    // Add locally new contacts not yet in sheet
     const sheetIds = new Set(parsed.map(r => r.id));
     cached.forEach(c => { if (!sheetIds.has(c.id)) contactsData.push(c); });
   } catch(e) {
@@ -1248,9 +1138,7 @@ function getCachedContacts() {
   try { return JSON.parse(localStorage.getItem(CONTACTS_KEY)) || []; } catch(e) { return []; }
 }
 
-function loadContactsFromCache() {
-  contactsData = getCachedContacts();
-}
+function loadContactsFromCache() { contactsData = getCachedContacts(); }
 
 function openSidebar() {
   document.getElementById("sidebar").classList.add("open");
@@ -1279,8 +1167,7 @@ function addContact() {
 
 function deleteContact(id) {
   if (!confirm("Delete this contact?")) return;
-  const contacts = loadContacts().filter(c => c.id !== id);
-  saveContacts(contacts);
+  saveContacts(loadContacts().filter(c => c.id !== id));
   deleteRowRemote("contacts", id);
   renderContacts();
 }
@@ -1359,7 +1246,7 @@ function renderContacts() {
   `).join("");
 }
 
-// ── Boot ─────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────
 loadAll();
 </script>
 </body>
