@@ -1211,7 +1211,7 @@ async function loadContactsFromSheet() {
   try {
     const res = await fetch(PROXY + encodeURIComponent(CONTACTS_CSV));
     const text = await res.text();
-    const lines = text.trim().split("\n");
+    const lines = text.trim().split(/\r?\n/);
     if (lines.length < 2) { loadContactsFromCache(); return; }
     const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,"").toLowerCase());
     const parsed = lines.slice(1).map(line => {
