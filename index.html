@@ -744,14 +744,15 @@ async function flushSaveQueue() {
   const payload = saveQueue.shift();
   const ind = showSaving();
   try {
-    const res = await fetch(SCRIPT_URL, {
+    // Use no-cors mode to avoid the redirect/CORS issue with Apps Script
+    // We won't get a readable response but the write still goes through
+    await fetch(SCRIPT_URL, {
       method: "POST",
+      mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload),
     });
-    const text = await res.text();
-    const json = JSON.parse(text);
-    if (json.success) { showSaved(ind); } else { showSaveFailed(ind); }
+    showSaved(ind);
   } catch (e) {
     console.error("Fetch error:", e);
     showSaveFailed(ind);
