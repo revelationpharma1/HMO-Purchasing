@@ -56,20 +56,26 @@
     .legend { display: flex; gap: 12px; font-size: 11px; color: var(--gray); flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
     .roi-badge { border-radius: 20px; padding: 2px 10px; font-weight: 700; font-size: 11px; }
     .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--pink-med); margin-bottom: 14px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
     thead th { padding: 10px 12px; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .6px; background: var(--pink); color: var(--black); text-align: center; white-space: nowrap; }
     thead th.left { text-align: left; }
+    thead th.sticky { position: sticky; left: 0; z-index: 3; background: var(--pink); box-shadow: 2px 0 4px rgba(0,0,0,0.08); }
     tbody tr { transition: background .1s; }
     tbody tr.arrived-even { background: var(--white); } tbody tr.arrived-odd { background: var(--pink-light); }
     tbody tr.pending { background: #f0f0f0; opacity: .65; }
     tbody td { padding: 8px 12px; text-align: center; border-bottom: 1px solid var(--pink-med); color: var(--black); font-size: 13px; }
     tbody td.left { text-align: left; font-weight: 500; }
+    tbody td.sticky { position: sticky; left: 0; z-index: 2; box-shadow: 2px 0 4px rgba(0,0,0,0.08); }
+    tbody tr.arrived-even td.sticky { background: var(--white); }
+    tbody tr.arrived-odd td.sticky { background: var(--pink-light); }
+    tbody tr.pending td.sticky { background: #f0f0f0; }
     tbody td.cost { color: #8a5a00; font-weight: 700; } tbody td.green { color: var(--green); font-weight: 700; }
     tbody td.red-val { color: var(--red); font-weight: 700; } tbody td.gray-val { color: var(--gray); font-weight: 700; }
     tbody td.source-cell { text-align: left; color: var(--gray); }
     tbody td.by-tara { color: var(--gray); font-weight: 600; font-size: 12px; }
     tbody td.by-jamie { color: var(--pink-dark); font-weight: 600; font-size: 12px; }
     tfoot td { padding: 8px 12px; text-align: center; background: var(--pink-med); font-weight: 700; font-size: 12px; color: var(--gray); }
+    tfoot td.sticky { position: sticky; left: 0; z-index: 2; background: var(--pink-med); box-shadow: 2px 0 4px rgba(0,0,0,0.08); }
     tfoot td.total-cost { color: var(--red); }
     .editable { cursor: pointer; padding: 2px 4px; border-radius: 4px; display: block; min-width: 40px; transition: background .1s; }
     .editable:hover { background: var(--pink-light); } .editable.empty { color: var(--pink-dark); }
@@ -233,7 +239,7 @@ var data = {};
 var activeTab = "patches";
 var repayments = [];
 var patchSales = [];
-var repaymentsOpen = true;
+var collapsedCats = {};
 var searchQuery = "";
 var contactsData = [];
 
@@ -552,38 +558,13 @@ function renderTable() {
       var catRem=Math.max(0,catQ-catSold);
       var avgCost=catQ>0?(catW/catQ):0;
 
-      // Section header
-      bodyHTML+='<tr><td colspan="15" style="background:'+s.bg+';border-top:2px solid '+s.border+';border-bottom:2px solid '+s.border+';padding:7px 14px;text-align:left">'+
-        '<span style="font-weight:800;font-size:12px;color:'+s.color+';text-transform:uppercase;letter-spacing:.8px">'+cat+' Patches</span>'+
-        '<span style="font-size:11px;color:'+s.color+';margin-left:10px;font-weight:600">'+catRows.length+' items &nbsp;·&nbsp; '+catQ+' units &nbsp;·&nbsp; $'+catW.toFixed(2)+' invested</span>'+
-        '</td></tr>';
+      var isCollapsed = !!collapsedCats[cat];
+      var arrow = isCollapsed ? '▶' : '▼';
 
-      // Item rows
-      catRows.forEach(function(r){bodyHTML+=buildRow(r,idx++,"patches",true);});
-
-      // Totals row
-      bodyHTML+='<tr style="background:'+s.bg+';border-top:2px solid '+s.border+'">'+
-        '<td colspan="3" style="text-align:left;padding:8px 14px;font-weight:800;font-size:12px;color:'+s.color+'">TOTALS</td>'+
-        '<td style="font-weight:800;font-size:12px;color:'+s.color+';text-align:center">'+catQ+' units</td>'+
-        '<td style="font-weight:800;font-size:12px;color:'+s.color+';text-align:center">$'+catW.toFixed(2)+'</td>'+
-        '<td style="font-weight:800;font-size:12px;color:'+s.color+';text-align:center">$'+avgCost.toFixed(2)+' avg</td>'+
-        '<td colspan="3" style="text-align:center;color:var(--gray);font-size:12px">—</td>'+
-        '<td style="font-weight:800;font-size:13px;color:#2d7a4f;text-align:center">'+catSold+' sold</td>'+
-        '<td style="font-weight:800;font-size:13px;color:'+(catRem===0?'#888':'var(--black)')+';text-align:center">'+catRem+' left</td>'+
-        '<td colspan="4"></td>'+
-        '</tr>';
-
-      // Log a sale row
-      bodyHTML+='<tr style="background:'+s.bg+';border-bottom:3px solid '+s.border+'">'+
-        '<td colspan="15" style="padding:8px 14px">'+
-          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
-            '<span style="font-size:11px;font-weight:700;color:'+s.color+';text-transform:uppercase;letter-spacing:.5px">Log '+cat+' Sale:</span>'+
-            '<input type="number" id="cat-qty-'+cat+'" placeholder="Qty sold" min="1" style="width:90px;padding:4px 8px;border:1.5px solid '+s.border+';border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;background:white" />'+
-            '<input type="text" id="cat-notes-'+cat+'" placeholder="Notes (optional)" style="flex:1;min-width:140px;padding:4px 8px;border:1.5px solid '+s.border+';border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;background:white" />'+
-            '<button onclick="logCatSale(\''+cat+'\')" style="padding:4px 14px;background:'+s.color+';color:white;border:none;border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer">+ Log</button>'+
-          '</div>'+
-        '</td>'+
-        '</tr>';
+      // Section header (clickable to collapse)
+      bodyHTML+='<tr><td colspan="15" style="background:'+s.bg+';border-top:2px solid '+s.border+';border-bottom:2px solid '+s.border+';padding:7px 14px;text-align:left;cursor:pointer" onclick="toggleCat(\''+cat+'\')">'+
+        '<span style="font-weight:800;font-size:12px;color:'+s.color+';text-transform:uppercase;letter-spacing:.8px">'+arrow+' '+cat+' Patches</span>'+
+        '<span style="font-size:11px;color:'+s.color+';margin-left:10px;font-weight:600">'+catRows.length+' items &nbsp;·&nbsp; '+catQ+' units &nbsp;·&nbsp; 
     });
 
     // Grand totals
@@ -595,7 +576,7 @@ function renderTable() {
       '<div class="table-wrap">'+
       '<table>'+
       '<thead><tr>'+
-        '<th>✓</th><th class="left">Item</th><th>Category</th><th>Qty</th>'+
+        '<th>✓</th><th class="left sticky">Item</th><th>Category</th><th>Qty</th>'+
         '<th>Bundle Cost</th><th>Cost/Item</th><th>Retail</th><th>ROI %</th>'+
         '<th>Margin/Item</th>'+
         '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th>'+
@@ -620,12 +601,12 @@ function renderTable() {
   }
 
   var bodyHTML=rows.map(function(r,i){return buildRow(r,i,activeTab,showRetail);}).join('');
-  var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+      var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
   var rf=showRetail?'<td>—</td><td>—</td>':'';
 
   document.getElementById("tableContainer").innerHTML=
     '<div class="table-wrap"><table>'+
-    '<thead><tr><th>✓</th><th class="left">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+    '<thead><tr><th>✓</th><th class="left sticky">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
     '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
     '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
     '<tbody>'+bodyHTML+'</tbody>'+
@@ -652,7 +633,952 @@ function buildRow(r,i,sheet,showRetail) {
 
   return '<tr class="'+rowClass+'" id="row-'+sheet+'-'+r.id+'">'+
     '<td><input type="checkbox"'+(r.arrived?' checked':'')+' onchange="toggleArrived(\''+sheet+'\','+r.id+',this.checked)"/></td>'+
-    '<td class="left">'+editableCell(r,"item","text","",sheet)+'</td>'+
+    '<td class="left sticky">'+editableCell(r,"item","text","",sheet)+'</td>'+
+    catCell+
+    '<td>'+editableCell(r,"qty","number","",sheet)+'</td>'+
+    '<td>'+editableCell(r,"wholesale","number","$",sheet)+'</td>'+
+    '<td class="cost">$'+c.toFixed(2)+'</td>'+
+    retailCells+
+    '<td class="'+marginColor+'">'+(margin!==null?'$'+margin.toFixed(2):'—')+'</td>'+
+    '<td'+soldStyle+'>'+editableCell(r,"qty_sold","number","",sheet)+'</td>'+
+    '<td'+leftStyle+'>'+qtyLeft+'</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+(actualRev!==null?'$'+actualRev.toFixed(2):'—')+'</td>'+
+    '<td class="source-cell">'+editableCell(r,"source","text","",sheet)+'</td>'+
+    '<td class="'+byClass+'">'+editableCell(r,"purchaser","text","",sheet)+'</td>'+
+    '<td><button class="del-btn" onclick="deleteRow(\''+sheet+'\','+r.id+')">×</button></td>'+
+    '</tr>';
+}
+
+// ── Editable cell ─────────────────────────────────────────────
+function editableCell(r,field,type,prefix,sheet) {
+  prefix=prefix||"";sheet=sheet||activeTab;
+  var val=r[field];
+  var display=val==null?"—":(type==="number"?prefix+parseFloat(val).toFixed(2):val);
+  var isEmpty=val==null||val==="";
+  return '<span class="editable'+(isEmpty?' empty':'')+'" onclick="startEdit(this,\''+sheet+'\','+r.id+',\''+field+'\',\''+type+'\',\''+prefix+'\')">'+display+'</span>';
+}
+
+var EDIT_FIELDS=["item","qty","wholesale","retail","qty_sold","source","purchaser"];
+
+function startEdit(el,sheet,id,field,type,prefix) {
+  var row=data[sheet].find(function(r){return r.id===id;});
+  var cur=row[field],inputVal=cur==null?"":cur;
+  el.innerHTML='<input type="'+(type==='number'?'number':'text')+'" value="'+inputVal+'" onblur="commitEdit(this,\''+sheet+'\','+id+',\''+field+'\',\''+type+'\')" onkeydown="handleEditKey(event,this,\''+sheet+'\','+id+',\''+field+'\',\''+type+'\')" style="width:90%;padding:3px 6px;border:1.5px solid var(--pink-dark);border-radius:5px;background:white;color:black;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none"/>';
+  el.querySelector("input").focus();el.querySelector("input").select();
+}
+
+function handleEditKey(e,input,sheet,id,field,type) {
+  if(e.key==="Enter"){e.preventDefault();input.blur();return;}
+  if(e.key==="Escape"){renderAll();return;}
+  if(e.key==="Tab"){
+    e.preventDefault();
+    var raw=input.value.trim();
+    var val=type==="number"?(raw===""?null:parseFloat(raw)):raw;
+    var row=data[sheet].find(function(r){return r.id===id;});
+    if(row){row[field]=val;saveCell(sheet,id,field,val===null?"":val);}
+    var fields=EDIT_FIELDS.filter(function(f){if((f==="retail"||f==="qty_sold")&&NO_RETAIL_TABS.includes(sheet))return false;return true;});
+    var idx=fields.indexOf(field),nextIdx=e.shiftKey?idx-1:idx+1;
+    if(nextIdx<0||nextIdx>=fields.length){renderAll();return;}
+    var nextField=fields[nextIdx];
+    renderAll();
+    setTimeout(function(){
+      var rowEl=document.getElementById("row-"+sheet+"-"+id);
+      if(!rowEl)return;
+      for(var span of rowEl.querySelectorAll(".editable")){
+        if((span.getAttribute("onclick")||"").includes("'"+nextField+"'")){span.click();break;}
+      }
+    },30);
+  }
+}
+
+function commitEdit(input,sheet,id,field,type) {
+  var raw=input.value.trim();
+  var val=type==="number"?(raw===""?null:parseFloat(raw)):raw;
+  var row=data[sheet].find(function(r){return r.id===id;});
+  if(row){row[field]=val;saveCell(sheet,id,field,val===null?"":val);saveLocalCache();}
+  renderAll();
+}
+
+function toggleArrived(sheet,id,checked) {
+  var row=data[sheet].find(function(r){return r.id===id;});
+  if(row){row.arrived=checked;saveCell(sheet,id,"arrived",checked?"TRUE":"FALSE");saveLocalCache();}
+  renderAll();
+}
+
+function deleteRow(sheet,id) {
+  if(!confirm("Delete this row?"))return;
+  data[sheet]=data[sheet].filter(function(r){return r.id!==id;});
+  deleteRowRemote(sheet,id);markDeletedInCache(sheet,id);saveLocalCache();renderAll();
+}
+
+function addRow(sheet) {
+  var rows=data[sheet];
+  var newId=Math.max.apply(null,rows.map(function(r){return r.id;}).concat([0]))+1;
+  var newRow={id:newId,item:"New Item",qty:1,wholesale:0,retail:null,qty_sold:0,source:"",purchaser:"",arrived:false,notes:"",category:""};
+  rows.push(newRow);saveNewRow(sheet,newRow);saveLocalCache();renderAll();
+  setTimeout(function(){var el=document.getElementById("row-"+sheet+"-"+newId);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},100);
+}
+
+function renderAll(){renderSummary();renderTabs();renderTable();}
+
+// ── Local cache ───────────────────────────────────────────────
+function cacheKey(){return"hmo_data_v1";}
+function saveLocalCache(){try{localStorage.setItem(cacheKey(),JSON.stringify(data));}catch(e){}}
+function mergeLocalCache(){
+  try{
+    var cached=localStorage.getItem(cacheKey());if(!cached)return;
+    var local=JSON.parse(cached);
+    Object.keys(local).forEach(function(tab){
+      if(!data[tab]){data[tab]=local[tab];return;}
+      var map={};local[tab].forEach(function(r){map[r.id]=r;});
+      data[tab]=data[tab].map(function(r){return map[r.id]?Object.assign({},r,map[r.id]):r;});
+      var ids=new Set(data[tab].map(function(r){return r.id;}));
+      local[tab].forEach(function(r){if(!ids.has(r.id))data[tab].push(r);});
+      var del=local["__deleted__"]||[];
+      if(del.length)data[tab]=data[tab].filter(function(r){return!del.includes(tab+"_"+r.id);});
+    });
+  }catch(e){}
+}
+function markDeletedInCache(sheet,id){
+  try{
+    var cached=localStorage.getItem(cacheKey());
+    var local=cached?JSON.parse(cached):{};
+    if(!local["__deleted__"])local["__deleted__"]=[];
+    local["__deleted__"].push(sheet+"_"+id);
+    localStorage.setItem(cacheKey(),JSON.stringify(local));
+  }catch(e){}
+}
+
+// ── Repayments toggle ─────────────────────────────────────────
+function toggleRepayments(){
+  repaymentsOpen=!repaymentsOpen;
+  document.getElementById("repaymentsSection").style.display=repaymentsOpen?"":"none";
+  document.getElementById("repToggleArrow").textContent=repaymentsOpen?"▼":"▶";
+}
+
+// ── Search ────────────────────────────────────────────────────
+function handleSearch(val){
+  searchQuery=val.trim().toLowerCase();
+  document.getElementById("searchClear").classList.toggle("visible",searchQuery.length>0);
+  if(!searchQuery.length){clearSearch();return;}
+  document.getElementById("tabs").style.display="none";
+  document.querySelector(".legend").style.display="none";
+  document.getElementById("searchResultsLabel").classList.add("visible");
+  renderSearchResults();
+}
+function clearSearch(){
+  searchQuery="";
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchClear").classList.remove("visible");
+  document.getElementById("searchResultsLabel").classList.remove("visible");
+  document.getElementById("tabs").style.display="";
+  document.querySelector(".legend").style.display="";
+  renderTable();
+}
+function highlight(text,query){
+  if(!query)return String(text);
+  var esc=query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return String(text).replace(new RegExp('('+esc+')','gi'),'<span class="search-highlight">$1</span>');
+}
+function renderSearchResults(){
+  var q=searchQuery,totalMatches=0,html="";
+  TABS.forEach(function(tab){
+    var rows=(data[tab.key]||[]).filter(function(r){
+      return(r.item&&r.item.toLowerCase().includes(q))||(r.source&&r.source.toLowerCase().includes(q))||(r.purchaser&&r.purchaser.toLowerCase().includes(q))||(r.notes&&r.notes.toLowerCase().includes(q))||String(r.retail||"").includes(q)||String(r.wholesale||"").includes(q);
+    });
+    if(!rows.length)return;
+    totalMatches+=rows.length;
+    var showRetail=!NO_RETAIL_TABS.includes(tab.key);
+    var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+    var rowsHTML=rows.map(function(r,i){return buildRow(r,i,tab.key,showRetail);}).join('');
+    html+='<div class="search-tab-header">'+tab.icon+' '+tab.label+' — '+rows.length+' result'+(rows.length!==1?'s':'')+'</div>'+
+      '<div class="table-wrap" style="border-radius:0;border-top:none;margin-bottom:16px"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+      '<thead><tr><th>✓</th><th class="left">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+      '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+      '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
+      '<tbody>'+rowsHTML+'</tbody></table></div>';
+  });
+  document.getElementById("searchResultsLabel").textContent=totalMatches>0?totalMatches+' result'+(totalMatches!==1?'s':'')+' for "'+searchQuery+'" across all tabs':'No results found for "'+searchQuery+'"';
+  document.getElementById("tableContainer").innerHTML=totalMatches>0?'<div style="border-radius:10px;overflow:hidden;border:1px solid var(--pink-med)">'+html+'</div>':'<div style="text-align:center;padding:60px;color:var(--gray);font-size:15px">😕 No items found matching "<strong>'+searchQuery+'</strong>"</div>';
+}
+
+// ── Contacts ──────────────────────────────────────────────────
+function loadContacts(){return contactsData;}
+function saveContacts(c){contactsData=c;try{localStorage.setItem(CONTACTS_KEY,JSON.stringify(c));}catch(e){}}
+async function loadContactsFromSheet(){
+  try{
+    var res=await fetch(CONTACTS_CSV);
+    var text=await res.text();
+    var parsed=parseCSVGeneric(text).filter(function(r){return r.id&&r.venue;}).map(function(r){r.id=parseInt(r.id)||Date.now();return r;});
+    var cached=getCachedContacts(),map={};
+    cached.forEach(function(c){map[c.id]=c;});
+    contactsData=parsed.map(function(r){return map[r.id]?Object.assign({},r,map[r.id]):r;});
+    var ids=new Set(parsed.map(function(r){return r.id;}));
+    cached.forEach(function(c){if(!ids.has(c.id))contactsData.push(c);});
+  }catch(e){loadContactsFromCache();}
+  renderContacts();
+}
+function getCachedContacts(){try{return JSON.parse(localStorage.getItem(CONTACTS_KEY))||[];}catch(e){return[];}}
+function loadContactsFromCache(){contactsData=getCachedContacts();}
+function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("sidebarOverlay").classList.add("open");loadContactsFromSheet();}
+function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarOverlay").classList.remove("open");}
+function addContact(){
+  var contacts=loadContacts(),newId=Date.now();
+  var newContact={id:newId,venue:"New Venue",name:"",phone:"",email:"",fee:"",notes:""};
+  contacts.push(newContact);saveContacts(contacts);saveNewRow("contacts",newContact);renderContacts();
+  setTimeout(function(){var el=document.getElementById("cv-"+newId);if(el){el.click();el.scrollIntoView({behavior:"smooth",block:"center"});}},50);
+}
+function deleteContact(id){
+  if(!confirm("Delete this contact?"))return;
+  saveContacts(loadContacts().filter(function(c){return c.id!==id;}));
+  deleteRowRemote("contacts",id);renderContacts();
+}
+function editContactField(id,field,el){
+  var contacts=loadContacts(),contact=contacts.find(function(c){return c.id===id;});
+  if(!contact)return;
+  var cur=contact[field]||"",isML=field==="notes";
+  el.innerHTML=isML?'<textarea rows="2" autofocus style="width:100%;background:none;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--black);resize:none">'+cur+'</textarea>':
+    '<input type="text" value="'+cur.replace(/"/g,'&quot;')+'" autofocus style="width:100%;background:none;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--black)" />';
+  var input=el.querySelector("input,textarea");input.focus();input.select&&input.select();
+  var commit=function(){var val=input.value.trim();contact[field]=val;saveContacts(contacts);saveCell("contacts",id,field,val);renderContacts();};
+  input.addEventListener("blur",commit);
+  input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!isML){e.preventDefault();input.blur();}});
+}
+function renderContacts(){
+  var contacts=loadContacts();
+  var q=(document.getElementById("contactSearch")?.value||"").toLowerCase().trim();
+  var filtered=q?contacts.filter(function(c){return(c.venue||"").toLowerCase().includes(q)||(c.name||"").toLowerCase().includes(q)||(c.phone||"").toLowerCase().includes(q)||(c.email||"").toLowerCase().includes(q)||(c.notes||"").toLowerCase().includes(q);}):contacts;
+  var body=document.getElementById("contactsBody");if(!body)return;
+  if(!filtered.length){body.innerHTML='<div class="no-contacts">'+(q?'😕 No contacts match your search.':'📋 No contacts yet.<br/>Hit <strong>+ Add Contact</strong> to get started!')+'</div>';return;}
+  body.innerHTML=filtered.map(function(c){
+    return '<div class="contact-card">'+
+      '<div class="contact-card-header"><div class="contact-venue" id="cv-'+c.id+'" onclick="editContactField('+c.id+',\'venue\',this)">'+(c.venue||'<span style="color:var(--pink-dark);font-style:italic">Venue name</span>')+'</div>'+
+      '<button class="contact-del-btn" onclick="deleteContact('+c.id+')">×</button></div>'+
+      '<div class="contact-fields">'+
+        '<div class="contact-field"><label>Contact Name</label><div class="cf-value '+(c.name?'':'empty')+'" onclick="editContactField('+c.id+',\'name\',this)">'+(c.name||'Add name')+'</div></div>'+
+        '<div class="contact-field"><label>Phone</label><div class="cf-value '+(c.phone?'':'empty')+'" onclick="editContactField('+c.id+',\'phone\',this)">'+(c.phone||'Add phone')+'</div></div>'+
+        '<div class="contact-field"><label>Email</label><div class="cf-value '+(c.email?'':'empty')+'" onclick="editContactField('+c.id+',\'email\',this)">'+(c.email||'Add email')+'</div></div>'+
+        '<div class="contact-field"><label>Booth Fee</label><div class="cf-value cf-fee '+(c.fee?'':'empty')+'" onclick="editContactField('+c.id+',\'fee\',this)">'+(c.fee||'Add fee')+'</div></div>'+
+        '<div class="contact-field full"><label>Notes</label><div class="cf-value '+(c.notes?'':'empty')+'" onclick="editContactField('+c.id+',\'notes\',this)">'+(c.notes||'Add notes')+'</div></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
++catW.toFixed(2)+' invested &nbsp;·&nbsp; '+catSold+' sold &nbsp;·&nbsp; '+catRem+' left</span>'+
+        '</td></tr>';
+
+      if (!isCollapsed) {
+        // Item rows
+        catRows.forEach(function(r){bodyHTML+=buildRow(r,idx++,"patches",true);});
+
+        // Totals row
+        bodyHTML+='<tr style="background:'+s.bg+';border-top:2px solid '+s.border+'">'+
+          '<td colspan="3" style="text-align:left;padding:8px 14px;font-weight:800;font-size:12px;color:'+s.color+'">TOTALS</td>'+
+          '<td style="font-weight:800;font-size:12px;color:'+s.color+';text-align:center">'+catQ+' units</td>'+
+          '<td style="font-weight:800;font-size:12px;color:'+s.color+';text-align:center">
+    });
+
+    // Grand totals
+    var allSold=PATCH_CATS.reduce(function(s,c){return s+getCatSold(c);},0);
+    var allQ=rows.reduce(function(s,r){return s+(r.qty||0);},0);
+    var allRem=Math.max(0,allQ-allSold);
+
+    document.getElementById("tableContainer").innerHTML=
+      '<div class="table-wrap">'+
+      '<table>'+
+      '<thead><tr>'+
+        '<th>✓</th><th class="left sticky">Item</th><th>Category</th><th>Qty</th>'+
+        '<th>Bundle Cost</th><th>Cost/Item</th><th>Retail</th><th>ROI %</th>'+
+        '<th>Margin/Item</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+        '<th class="left">Source</th><th>By</th><th></th>'+
+      '</tr></thead>'+
+      '<tbody>'+bodyHTML+'</tbody>'+
+      '<tfoot><tr>'+
+        '<td colspan="3" style="text-align:left">GRAND TOTALS</td>'+
+        '<td>'+allQ+'</td>'+
+        '<td class="total-cost">$'+totalWholesale.toFixed(2)+'</td>'+
+        '<td>—</td><td>—</td><td>—</td><td>—</td>'+
+        '<td style="color:#2d7a4f;font-weight:700">'+allSold+'</td>'+
+        '<td style="color:'+(allRem===0?'#888':'var(--black)')+';font-weight:700">'+allRem+'</td>'+
+        '<td style="color:#2d7a4f;font-weight:700">'+(totalActRev>0?'$'+totalActRev.toFixed(2):'—')+'</td>'+
+        '<td colspan="3"></td>'+
+      '</tr></tfoot>'+
+      '</table></div>'+
+      '<button class="add-btn" onclick="addRow(\'patches\')">+ Add Row</button>';
+    return;
+  }
+
+  var bodyHTML=rows.map(function(r,i){return buildRow(r,i,activeTab,showRetail);}).join('');
+      var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+  var rf=showRetail?'<td>—</td><td>—</td>':'';
+
+  document.getElementById("tableContainer").innerHTML=
+    '<div class="table-wrap"><table>'+
+    '<thead><tr><th>✓</th><th class="left sticky">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+    '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+    '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
+    '<tbody>'+bodyHTML+'</tbody>'+
+    '<tfoot><tr><td colspan="2" style="text-align:left">TOTALS</td><td>'+totalItems+'</td><td class="total-cost">$'+totalWholesale.toFixed(2)+'</td><td>—</td>'+rf+'<td>—</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+totalSold+'</td><td>—</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+(totalActRev>0?'$'+totalActRev.toFixed(2):'—')+'</td><td colspan="3"></td></tr></tfoot>'+
+    '</table></div>'+
+    '<button class="add-btn" onclick="addRow(\''+activeTab+'\')">+ Add Row</button>';
+}
+
+function buildRow(r,i,sheet,showRetail) {
+  var c=cpu(r),rv=roiVal(r),margin=r.retail?r.retail-c:null,rs=rv!==null?roiStyle(rv):"";
+  var rowClass=r.arrived?(i%2===0?"arrived-even":"arrived-odd"):"pending";
+  var byClass=r.purchaser==="Jamie"?"by-jamie":"by-tara";
+  var qtySold=r.qty_sold||0,qtyLeft=(r.qty||0)-qtySold;
+  var actualRev=r.retail&&qtySold>0?r.retail*qtySold:null;
+  var marginColor=margin!==null?(margin>0?"green":"red-val"):"gray-val";
+  var soldStyle=qtySold>0?' style="color:#2d7a4f;font-weight:700"':'';
+  var leftStyle=qtyLeft<0?' style="color:#c0392b;font-weight:700"':(qtyLeft===0&&r.qty>0?' style="color:#888"':'');
+  var catCell=sheet==="patches"?'<td>'+catDropdown(r)+'</td>':'';
+  var retailCells=showRetail?
+    '<td>'+editableCell(r,"retail","number","$",sheet)+'</td>'+
+    '<td>'+(rv!==null?'<span class="roi" style="'+rs+'">'+rv+'%</span>':'<span style="color:var(--pink-dark)">—</span>')+'</td>':'';
+
+  return '<tr class="'+rowClass+'" id="row-'+sheet+'-'+r.id+'">'+
+    '<td><input type="checkbox"'+(r.arrived?' checked':'')+' onchange="toggleArrived(\''+sheet+'\','+r.id+',this.checked)"/></td>'+
+    '<td class="left sticky">'+editableCell(r,"item","text","",sheet)+'</td>'+
+    catCell+
+    '<td>'+editableCell(r,"qty","number","",sheet)+'</td>'+
+    '<td>'+editableCell(r,"wholesale","number","$",sheet)+'</td>'+
+    '<td class="cost">$'+c.toFixed(2)+'</td>'+
+    retailCells+
+    '<td class="'+marginColor+'">'+(margin!==null?'$'+margin.toFixed(2):'—')+'</td>'+
+    '<td'+soldStyle+'>'+editableCell(r,"qty_sold","number","",sheet)+'</td>'+
+    '<td'+leftStyle+'>'+qtyLeft+'</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+(actualRev!==null?'$'+actualRev.toFixed(2):'—')+'</td>'+
+    '<td class="source-cell">'+editableCell(r,"source","text","",sheet)+'</td>'+
+    '<td class="'+byClass+'">'+editableCell(r,"purchaser","text","",sheet)+'</td>'+
+    '<td><button class="del-btn" onclick="deleteRow(\''+sheet+'\','+r.id+')">×</button></td>'+
+    '</tr>';
+}
+
+// ── Editable cell ─────────────────────────────────────────────
+function editableCell(r,field,type,prefix,sheet) {
+  prefix=prefix||"";sheet=sheet||activeTab;
+  var val=r[field];
+  var display=val==null?"—":(type==="number"?prefix+parseFloat(val).toFixed(2):val);
+  var isEmpty=val==null||val==="";
+  return '<span class="editable'+(isEmpty?' empty':'')+'" onclick="startEdit(this,\''+sheet+'\','+r.id+',\''+field+'\',\''+type+'\',\''+prefix+'\')">'+display+'</span>';
+}
+
+var EDIT_FIELDS=["item","qty","wholesale","retail","qty_sold","source","purchaser"];
+
+function startEdit(el,sheet,id,field,type,prefix) {
+  var row=data[sheet].find(function(r){return r.id===id;});
+  var cur=row[field],inputVal=cur==null?"":cur;
+  el.innerHTML='<input type="'+(type==='number'?'number':'text')+'" value="'+inputVal+'" onblur="commitEdit(this,\''+sheet+'\','+id+',\''+field+'\',\''+type+'\')" onkeydown="handleEditKey(event,this,\''+sheet+'\','+id+',\''+field+'\',\''+type+'\')" style="width:90%;padding:3px 6px;border:1.5px solid var(--pink-dark);border-radius:5px;background:white;color:black;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none"/>';
+  el.querySelector("input").focus();el.querySelector("input").select();
+}
+
+function handleEditKey(e,input,sheet,id,field,type) {
+  if(e.key==="Enter"){e.preventDefault();input.blur();return;}
+  if(e.key==="Escape"){renderAll();return;}
+  if(e.key==="Tab"){
+    e.preventDefault();
+    var raw=input.value.trim();
+    var val=type==="number"?(raw===""?null:parseFloat(raw)):raw;
+    var row=data[sheet].find(function(r){return r.id===id;});
+    if(row){row[field]=val;saveCell(sheet,id,field,val===null?"":val);}
+    var fields=EDIT_FIELDS.filter(function(f){if((f==="retail"||f==="qty_sold")&&NO_RETAIL_TABS.includes(sheet))return false;return true;});
+    var idx=fields.indexOf(field),nextIdx=e.shiftKey?idx-1:idx+1;
+    if(nextIdx<0||nextIdx>=fields.length){renderAll();return;}
+    var nextField=fields[nextIdx];
+    renderAll();
+    setTimeout(function(){
+      var rowEl=document.getElementById("row-"+sheet+"-"+id);
+      if(!rowEl)return;
+      for(var span of rowEl.querySelectorAll(".editable")){
+        if((span.getAttribute("onclick")||"").includes("'"+nextField+"'")){span.click();break;}
+      }
+    },30);
+  }
+}
+
+function commitEdit(input,sheet,id,field,type) {
+  var raw=input.value.trim();
+  var val=type==="number"?(raw===""?null:parseFloat(raw)):raw;
+  var row=data[sheet].find(function(r){return r.id===id;});
+  if(row){row[field]=val;saveCell(sheet,id,field,val===null?"":val);saveLocalCache();}
+  renderAll();
+}
+
+function toggleArrived(sheet,id,checked) {
+  var row=data[sheet].find(function(r){return r.id===id;});
+  if(row){row.arrived=checked;saveCell(sheet,id,"arrived",checked?"TRUE":"FALSE");saveLocalCache();}
+  renderAll();
+}
+
+function deleteRow(sheet,id) {
+  if(!confirm("Delete this row?"))return;
+  data[sheet]=data[sheet].filter(function(r){return r.id!==id;});
+  deleteRowRemote(sheet,id);markDeletedInCache(sheet,id);saveLocalCache();renderAll();
+}
+
+function addRow(sheet) {
+  var rows=data[sheet];
+  var newId=Math.max.apply(null,rows.map(function(r){return r.id;}).concat([0]))+1;
+  var newRow={id:newId,item:"New Item",qty:1,wholesale:0,retail:null,qty_sold:0,source:"",purchaser:"",arrived:false,notes:"",category:""};
+  rows.push(newRow);saveNewRow(sheet,newRow);saveLocalCache();renderAll();
+  setTimeout(function(){var el=document.getElementById("row-"+sheet+"-"+newId);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},100);
+}
+
+function renderAll(){renderSummary();renderTabs();renderTable();}
+
+// ── Local cache ───────────────────────────────────────────────
+function cacheKey(){return"hmo_data_v1";}
+function saveLocalCache(){try{localStorage.setItem(cacheKey(),JSON.stringify(data));}catch(e){}}
+function mergeLocalCache(){
+  try{
+    var cached=localStorage.getItem(cacheKey());if(!cached)return;
+    var local=JSON.parse(cached);
+    Object.keys(local).forEach(function(tab){
+      if(!data[tab]){data[tab]=local[tab];return;}
+      var map={};local[tab].forEach(function(r){map[r.id]=r;});
+      data[tab]=data[tab].map(function(r){return map[r.id]?Object.assign({},r,map[r.id]):r;});
+      var ids=new Set(data[tab].map(function(r){return r.id;}));
+      local[tab].forEach(function(r){if(!ids.has(r.id))data[tab].push(r);});
+      var del=local["__deleted__"]||[];
+      if(del.length)data[tab]=data[tab].filter(function(r){return!del.includes(tab+"_"+r.id);});
+    });
+  }catch(e){}
+}
+function markDeletedInCache(sheet,id){
+  try{
+    var cached=localStorage.getItem(cacheKey());
+    var local=cached?JSON.parse(cached):{};
+    if(!local["__deleted__"])local["__deleted__"]=[];
+    local["__deleted__"].push(sheet+"_"+id);
+    localStorage.setItem(cacheKey(),JSON.stringify(local));
+  }catch(e){}
+}
+
+// ── Repayments toggle ─────────────────────────────────────────
+function toggleRepayments(){
+  repaymentsOpen=!repaymentsOpen;
+  document.getElementById("repaymentsSection").style.display=repaymentsOpen?"":"none";
+  document.getElementById("repToggleArrow").textContent=repaymentsOpen?"▼":"▶";
+}
+
+// ── Search ────────────────────────────────────────────────────
+function handleSearch(val){
+  searchQuery=val.trim().toLowerCase();
+  document.getElementById("searchClear").classList.toggle("visible",searchQuery.length>0);
+  if(!searchQuery.length){clearSearch();return;}
+  document.getElementById("tabs").style.display="none";
+  document.querySelector(".legend").style.display="none";
+  document.getElementById("searchResultsLabel").classList.add("visible");
+  renderSearchResults();
+}
+function clearSearch(){
+  searchQuery="";
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchClear").classList.remove("visible");
+  document.getElementById("searchResultsLabel").classList.remove("visible");
+  document.getElementById("tabs").style.display="";
+  document.querySelector(".legend").style.display="";
+  renderTable();
+}
+function highlight(text,query){
+  if(!query)return String(text);
+  var esc=query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return String(text).replace(new RegExp('('+esc+')','gi'),'<span class="search-highlight">$1</span>');
+}
+function renderSearchResults(){
+  var q=searchQuery,totalMatches=0,html="";
+  TABS.forEach(function(tab){
+    var rows=(data[tab.key]||[]).filter(function(r){
+      return(r.item&&r.item.toLowerCase().includes(q))||(r.source&&r.source.toLowerCase().includes(q))||(r.purchaser&&r.purchaser.toLowerCase().includes(q))||(r.notes&&r.notes.toLowerCase().includes(q))||String(r.retail||"").includes(q)||String(r.wholesale||"").includes(q);
+    });
+    if(!rows.length)return;
+    totalMatches+=rows.length;
+    var showRetail=!NO_RETAIL_TABS.includes(tab.key);
+    var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+    var rowsHTML=rows.map(function(r,i){return buildRow(r,i,tab.key,showRetail);}).join('');
+    html+='<div class="search-tab-header">'+tab.icon+' '+tab.label+' — '+rows.length+' result'+(rows.length!==1?'s':'')+'</div>'+
+      '<div class="table-wrap" style="border-radius:0;border-top:none;margin-bottom:16px"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+      '<thead><tr><th>✓</th><th class="left">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+      '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+      '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
+      '<tbody>'+rowsHTML+'</tbody></table></div>';
+  });
+  document.getElementById("searchResultsLabel").textContent=totalMatches>0?totalMatches+' result'+(totalMatches!==1?'s':'')+' for "'+searchQuery+'" across all tabs':'No results found for "'+searchQuery+'"';
+  document.getElementById("tableContainer").innerHTML=totalMatches>0?'<div style="border-radius:10px;overflow:hidden;border:1px solid var(--pink-med)">'+html+'</div>':'<div style="text-align:center;padding:60px;color:var(--gray);font-size:15px">😕 No items found matching "<strong>'+searchQuery+'</strong>"</div>';
+}
+
+// ── Contacts ──────────────────────────────────────────────────
+function loadContacts(){return contactsData;}
+function saveContacts(c){contactsData=c;try{localStorage.setItem(CONTACTS_KEY,JSON.stringify(c));}catch(e){}}
+async function loadContactsFromSheet(){
+  try{
+    var res=await fetch(CONTACTS_CSV);
+    var text=await res.text();
+    var parsed=parseCSVGeneric(text).filter(function(r){return r.id&&r.venue;}).map(function(r){r.id=parseInt(r.id)||Date.now();return r;});
+    var cached=getCachedContacts(),map={};
+    cached.forEach(function(c){map[c.id]=c;});
+    contactsData=parsed.map(function(r){return map[r.id]?Object.assign({},r,map[r.id]):r;});
+    var ids=new Set(parsed.map(function(r){return r.id;}));
+    cached.forEach(function(c){if(!ids.has(c.id))contactsData.push(c);});
+  }catch(e){loadContactsFromCache();}
+  renderContacts();
+}
+function getCachedContacts(){try{return JSON.parse(localStorage.getItem(CONTACTS_KEY))||[];}catch(e){return[];}}
+function loadContactsFromCache(){contactsData=getCachedContacts();}
+function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("sidebarOverlay").classList.add("open");loadContactsFromSheet();}
+function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarOverlay").classList.remove("open");}
+function addContact(){
+  var contacts=loadContacts(),newId=Date.now();
+  var newContact={id:newId,venue:"New Venue",name:"",phone:"",email:"",fee:"",notes:""};
+  contacts.push(newContact);saveContacts(contacts);saveNewRow("contacts",newContact);renderContacts();
+  setTimeout(function(){var el=document.getElementById("cv-"+newId);if(el){el.click();el.scrollIntoView({behavior:"smooth",block:"center"});}},50);
+}
+function deleteContact(id){
+  if(!confirm("Delete this contact?"))return;
+  saveContacts(loadContacts().filter(function(c){return c.id!==id;}));
+  deleteRowRemote("contacts",id);renderContacts();
+}
+function editContactField(id,field,el){
+  var contacts=loadContacts(),contact=contacts.find(function(c){return c.id===id;});
+  if(!contact)return;
+  var cur=contact[field]||"",isML=field==="notes";
+  el.innerHTML=isML?'<textarea rows="2" autofocus style="width:100%;background:none;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--black);resize:none">'+cur+'</textarea>':
+    '<input type="text" value="'+cur.replace(/"/g,'&quot;')+'" autofocus style="width:100%;background:none;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--black)" />';
+  var input=el.querySelector("input,textarea");input.focus();input.select&&input.select();
+  var commit=function(){var val=input.value.trim();contact[field]=val;saveContacts(contacts);saveCell("contacts",id,field,val);renderContacts();};
+  input.addEventListener("blur",commit);
+  input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!isML){e.preventDefault();input.blur();}});
+}
+function renderContacts(){
+  var contacts=loadContacts();
+  var q=(document.getElementById("contactSearch")?.value||"").toLowerCase().trim();
+  var filtered=q?contacts.filter(function(c){return(c.venue||"").toLowerCase().includes(q)||(c.name||"").toLowerCase().includes(q)||(c.phone||"").toLowerCase().includes(q)||(c.email||"").toLowerCase().includes(q)||(c.notes||"").toLowerCase().includes(q);}):contacts;
+  var body=document.getElementById("contactsBody");if(!body)return;
+  if(!filtered.length){body.innerHTML='<div class="no-contacts">'+(q?'😕 No contacts match your search.':'📋 No contacts yet.<br/>Hit <strong>+ Add Contact</strong> to get started!')+'</div>';return;}
+  body.innerHTML=filtered.map(function(c){
+    return '<div class="contact-card">'+
+      '<div class="contact-card-header"><div class="contact-venue" id="cv-'+c.id+'" onclick="editContactField('+c.id+',\'venue\',this)">'+(c.venue||'<span style="color:var(--pink-dark);font-style:italic">Venue name</span>')+'</div>'+
+      '<button class="contact-del-btn" onclick="deleteContact('+c.id+')">×</button></div>'+
+      '<div class="contact-fields">'+
+        '<div class="contact-field"><label>Contact Name</label><div class="cf-value '+(c.name?'':'empty')+'" onclick="editContactField('+c.id+',\'name\',this)">'+(c.name||'Add name')+'</div></div>'+
+        '<div class="contact-field"><label>Phone</label><div class="cf-value '+(c.phone?'':'empty')+'" onclick="editContactField('+c.id+',\'phone\',this)">'+(c.phone||'Add phone')+'</div></div>'+
+        '<div class="contact-field"><label>Email</label><div class="cf-value '+(c.email?'':'empty')+'" onclick="editContactField('+c.id+',\'email\',this)">'+(c.email||'Add email')+'</div></div>'+
+        '<div class="contact-field"><label>Booth Fee</label><div class="cf-value cf-fee '+(c.fee?'':'empty')+'" onclick="editContactField('+c.id+',\'fee\',this)">'+(c.fee||'Add fee')+'</div></div>'+
+        '<div class="contact-field full"><label>Notes</label><div class="cf-value '+(c.notes?'':'empty')+'" onclick="editContactField('+c.id+',\'notes\',this)">'+(c.notes||'Add notes')+'</div></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
++catW.toFixed(2)+'</td>'+
+          '<td style="font-weight:800;font-size:12px;color:'+s.color+';text-align:center">
+    });
+
+    // Grand totals
+    var allSold=PATCH_CATS.reduce(function(s,c){return s+getCatSold(c);},0);
+    var allQ=rows.reduce(function(s,r){return s+(r.qty||0);},0);
+    var allRem=Math.max(0,allQ-allSold);
+
+    document.getElementById("tableContainer").innerHTML=
+      '<div class="table-wrap">'+
+      '<table>'+
+      '<thead><tr>'+
+        '<th>✓</th><th class="left sticky">Item</th><th>Category</th><th>Qty</th>'+
+        '<th>Bundle Cost</th><th>Cost/Item</th><th>Retail</th><th>ROI %</th>'+
+        '<th>Margin/Item</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+        '<th class="left">Source</th><th>By</th><th></th>'+
+      '</tr></thead>'+
+      '<tbody>'+bodyHTML+'</tbody>'+
+      '<tfoot><tr>'+
+        '<td colspan="3" style="text-align:left">GRAND TOTALS</td>'+
+        '<td>'+allQ+'</td>'+
+        '<td class="total-cost">$'+totalWholesale.toFixed(2)+'</td>'+
+        '<td>—</td><td>—</td><td>—</td><td>—</td>'+
+        '<td style="color:#2d7a4f;font-weight:700">'+allSold+'</td>'+
+        '<td style="color:'+(allRem===0?'#888':'var(--black)')+';font-weight:700">'+allRem+'</td>'+
+        '<td style="color:#2d7a4f;font-weight:700">'+(totalActRev>0?'$'+totalActRev.toFixed(2):'—')+'</td>'+
+        '<td colspan="3"></td>'+
+      '</tr></tfoot>'+
+      '</table></div>'+
+      '<button class="add-btn" onclick="addRow(\'patches\')">+ Add Row</button>';
+    return;
+  }
+
+  var bodyHTML=rows.map(function(r,i){return buildRow(r,i,activeTab,showRetail);}).join('');
+      var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+  var rf=showRetail?'<td>—</td><td>—</td>':'';
+
+  document.getElementById("tableContainer").innerHTML=
+    '<div class="table-wrap"><table>'+
+    '<thead><tr><th>✓</th><th class="left sticky">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+    '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+    '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
+    '<tbody>'+bodyHTML+'</tbody>'+
+    '<tfoot><tr><td colspan="2" style="text-align:left">TOTALS</td><td>'+totalItems+'</td><td class="total-cost">$'+totalWholesale.toFixed(2)+'</td><td>—</td>'+rf+'<td>—</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+totalSold+'</td><td>—</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+(totalActRev>0?'$'+totalActRev.toFixed(2):'—')+'</td><td colspan="3"></td></tr></tfoot>'+
+    '</table></div>'+
+    '<button class="add-btn" onclick="addRow(\''+activeTab+'\')">+ Add Row</button>';
+}
+
+function buildRow(r,i,sheet,showRetail) {
+  var c=cpu(r),rv=roiVal(r),margin=r.retail?r.retail-c:null,rs=rv!==null?roiStyle(rv):"";
+  var rowClass=r.arrived?(i%2===0?"arrived-even":"arrived-odd"):"pending";
+  var byClass=r.purchaser==="Jamie"?"by-jamie":"by-tara";
+  var qtySold=r.qty_sold||0,qtyLeft=(r.qty||0)-qtySold;
+  var actualRev=r.retail&&qtySold>0?r.retail*qtySold:null;
+  var marginColor=margin!==null?(margin>0?"green":"red-val"):"gray-val";
+  var soldStyle=qtySold>0?' style="color:#2d7a4f;font-weight:700"':'';
+  var leftStyle=qtyLeft<0?' style="color:#c0392b;font-weight:700"':(qtyLeft===0&&r.qty>0?' style="color:#888"':'');
+  var catCell=sheet==="patches"?'<td>'+catDropdown(r)+'</td>':'';
+  var retailCells=showRetail?
+    '<td>'+editableCell(r,"retail","number","$",sheet)+'</td>'+
+    '<td>'+(rv!==null?'<span class="roi" style="'+rs+'">'+rv+'%</span>':'<span style="color:var(--pink-dark)">—</span>')+'</td>':'';
+
+  return '<tr class="'+rowClass+'" id="row-'+sheet+'-'+r.id+'">'+
+    '<td><input type="checkbox"'+(r.arrived?' checked':'')+' onchange="toggleArrived(\''+sheet+'\','+r.id+',this.checked)"/></td>'+
+    '<td class="left sticky">'+editableCell(r,"item","text","",sheet)+'</td>'+
+    catCell+
+    '<td>'+editableCell(r,"qty","number","",sheet)+'</td>'+
+    '<td>'+editableCell(r,"wholesale","number","$",sheet)+'</td>'+
+    '<td class="cost">$'+c.toFixed(2)+'</td>'+
+    retailCells+
+    '<td class="'+marginColor+'">'+(margin!==null?'$'+margin.toFixed(2):'—')+'</td>'+
+    '<td'+soldStyle+'>'+editableCell(r,"qty_sold","number","",sheet)+'</td>'+
+    '<td'+leftStyle+'>'+qtyLeft+'</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+(actualRev!==null?'$'+actualRev.toFixed(2):'—')+'</td>'+
+    '<td class="source-cell">'+editableCell(r,"source","text","",sheet)+'</td>'+
+    '<td class="'+byClass+'">'+editableCell(r,"purchaser","text","",sheet)+'</td>'+
+    '<td><button class="del-btn" onclick="deleteRow(\''+sheet+'\','+r.id+')">×</button></td>'+
+    '</tr>';
+}
+
+// ── Editable cell ─────────────────────────────────────────────
+function editableCell(r,field,type,prefix,sheet) {
+  prefix=prefix||"";sheet=sheet||activeTab;
+  var val=r[field];
+  var display=val==null?"—":(type==="number"?prefix+parseFloat(val).toFixed(2):val);
+  var isEmpty=val==null||val==="";
+  return '<span class="editable'+(isEmpty?' empty':'')+'" onclick="startEdit(this,\''+sheet+'\','+r.id+',\''+field+'\',\''+type+'\',\''+prefix+'\')">'+display+'</span>';
+}
+
+var EDIT_FIELDS=["item","qty","wholesale","retail","qty_sold","source","purchaser"];
+
+function startEdit(el,sheet,id,field,type,prefix) {
+  var row=data[sheet].find(function(r){return r.id===id;});
+  var cur=row[field],inputVal=cur==null?"":cur;
+  el.innerHTML='<input type="'+(type==='number'?'number':'text')+'" value="'+inputVal+'" onblur="commitEdit(this,\''+sheet+'\','+id+',\''+field+'\',\''+type+'\')" onkeydown="handleEditKey(event,this,\''+sheet+'\','+id+',\''+field+'\',\''+type+'\')" style="width:90%;padding:3px 6px;border:1.5px solid var(--pink-dark);border-radius:5px;background:white;color:black;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none"/>';
+  el.querySelector("input").focus();el.querySelector("input").select();
+}
+
+function handleEditKey(e,input,sheet,id,field,type) {
+  if(e.key==="Enter"){e.preventDefault();input.blur();return;}
+  if(e.key==="Escape"){renderAll();return;}
+  if(e.key==="Tab"){
+    e.preventDefault();
+    var raw=input.value.trim();
+    var val=type==="number"?(raw===""?null:parseFloat(raw)):raw;
+    var row=data[sheet].find(function(r){return r.id===id;});
+    if(row){row[field]=val;saveCell(sheet,id,field,val===null?"":val);}
+    var fields=EDIT_FIELDS.filter(function(f){if((f==="retail"||f==="qty_sold")&&NO_RETAIL_TABS.includes(sheet))return false;return true;});
+    var idx=fields.indexOf(field),nextIdx=e.shiftKey?idx-1:idx+1;
+    if(nextIdx<0||nextIdx>=fields.length){renderAll();return;}
+    var nextField=fields[nextIdx];
+    renderAll();
+    setTimeout(function(){
+      var rowEl=document.getElementById("row-"+sheet+"-"+id);
+      if(!rowEl)return;
+      for(var span of rowEl.querySelectorAll(".editable")){
+        if((span.getAttribute("onclick")||"").includes("'"+nextField+"'")){span.click();break;}
+      }
+    },30);
+  }
+}
+
+function commitEdit(input,sheet,id,field,type) {
+  var raw=input.value.trim();
+  var val=type==="number"?(raw===""?null:parseFloat(raw)):raw;
+  var row=data[sheet].find(function(r){return r.id===id;});
+  if(row){row[field]=val;saveCell(sheet,id,field,val===null?"":val);saveLocalCache();}
+  renderAll();
+}
+
+function toggleArrived(sheet,id,checked) {
+  var row=data[sheet].find(function(r){return r.id===id;});
+  if(row){row.arrived=checked;saveCell(sheet,id,"arrived",checked?"TRUE":"FALSE");saveLocalCache();}
+  renderAll();
+}
+
+function deleteRow(sheet,id) {
+  if(!confirm("Delete this row?"))return;
+  data[sheet]=data[sheet].filter(function(r){return r.id!==id;});
+  deleteRowRemote(sheet,id);markDeletedInCache(sheet,id);saveLocalCache();renderAll();
+}
+
+function addRow(sheet) {
+  var rows=data[sheet];
+  var newId=Math.max.apply(null,rows.map(function(r){return r.id;}).concat([0]))+1;
+  var newRow={id:newId,item:"New Item",qty:1,wholesale:0,retail:null,qty_sold:0,source:"",purchaser:"",arrived:false,notes:"",category:""};
+  rows.push(newRow);saveNewRow(sheet,newRow);saveLocalCache();renderAll();
+  setTimeout(function(){var el=document.getElementById("row-"+sheet+"-"+newId);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},100);
+}
+
+function renderAll(){renderSummary();renderTabs();renderTable();}
+
+// ── Local cache ───────────────────────────────────────────────
+function cacheKey(){return"hmo_data_v1";}
+function saveLocalCache(){try{localStorage.setItem(cacheKey(),JSON.stringify(data));}catch(e){}}
+function mergeLocalCache(){
+  try{
+    var cached=localStorage.getItem(cacheKey());if(!cached)return;
+    var local=JSON.parse(cached);
+    Object.keys(local).forEach(function(tab){
+      if(!data[tab]){data[tab]=local[tab];return;}
+      var map={};local[tab].forEach(function(r){map[r.id]=r;});
+      data[tab]=data[tab].map(function(r){return map[r.id]?Object.assign({},r,map[r.id]):r;});
+      var ids=new Set(data[tab].map(function(r){return r.id;}));
+      local[tab].forEach(function(r){if(!ids.has(r.id))data[tab].push(r);});
+      var del=local["__deleted__"]||[];
+      if(del.length)data[tab]=data[tab].filter(function(r){return!del.includes(tab+"_"+r.id);});
+    });
+  }catch(e){}
+}
+function markDeletedInCache(sheet,id){
+  try{
+    var cached=localStorage.getItem(cacheKey());
+    var local=cached?JSON.parse(cached):{};
+    if(!local["__deleted__"])local["__deleted__"]=[];
+    local["__deleted__"].push(sheet+"_"+id);
+    localStorage.setItem(cacheKey(),JSON.stringify(local));
+  }catch(e){}
+}
+
+// ── Repayments toggle ─────────────────────────────────────────
+function toggleRepayments(){
+  repaymentsOpen=!repaymentsOpen;
+  document.getElementById("repaymentsSection").style.display=repaymentsOpen?"":"none";
+  document.getElementById("repToggleArrow").textContent=repaymentsOpen?"▼":"▶";
+}
+
+// ── Search ────────────────────────────────────────────────────
+function handleSearch(val){
+  searchQuery=val.trim().toLowerCase();
+  document.getElementById("searchClear").classList.toggle("visible",searchQuery.length>0);
+  if(!searchQuery.length){clearSearch();return;}
+  document.getElementById("tabs").style.display="none";
+  document.querySelector(".legend").style.display="none";
+  document.getElementById("searchResultsLabel").classList.add("visible");
+  renderSearchResults();
+}
+function clearSearch(){
+  searchQuery="";
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchClear").classList.remove("visible");
+  document.getElementById("searchResultsLabel").classList.remove("visible");
+  document.getElementById("tabs").style.display="";
+  document.querySelector(".legend").style.display="";
+  renderTable();
+}
+function highlight(text,query){
+  if(!query)return String(text);
+  var esc=query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return String(text).replace(new RegExp('('+esc+')','gi'),'<span class="search-highlight">$1</span>');
+}
+function renderSearchResults(){
+  var q=searchQuery,totalMatches=0,html="";
+  TABS.forEach(function(tab){
+    var rows=(data[tab.key]||[]).filter(function(r){
+      return(r.item&&r.item.toLowerCase().includes(q))||(r.source&&r.source.toLowerCase().includes(q))||(r.purchaser&&r.purchaser.toLowerCase().includes(q))||(r.notes&&r.notes.toLowerCase().includes(q))||String(r.retail||"").includes(q)||String(r.wholesale||"").includes(q);
+    });
+    if(!rows.length)return;
+    totalMatches+=rows.length;
+    var showRetail=!NO_RETAIL_TABS.includes(tab.key);
+    var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+    var rowsHTML=rows.map(function(r,i){return buildRow(r,i,tab.key,showRetail);}).join('');
+    html+='<div class="search-tab-header">'+tab.icon+' '+tab.label+' — '+rows.length+' result'+(rows.length!==1?'s':'')+'</div>'+
+      '<div class="table-wrap" style="border-radius:0;border-top:none;margin-bottom:16px"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+      '<thead><tr><th>✓</th><th class="left">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+      '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+      '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
+      '<tbody>'+rowsHTML+'</tbody></table></div>';
+  });
+  document.getElementById("searchResultsLabel").textContent=totalMatches>0?totalMatches+' result'+(totalMatches!==1?'s':'')+' for "'+searchQuery+'" across all tabs':'No results found for "'+searchQuery+'"';
+  document.getElementById("tableContainer").innerHTML=totalMatches>0?'<div style="border-radius:10px;overflow:hidden;border:1px solid var(--pink-med)">'+html+'</div>':'<div style="text-align:center;padding:60px;color:var(--gray);font-size:15px">😕 No items found matching "<strong>'+searchQuery+'</strong>"</div>';
+}
+
+// ── Contacts ──────────────────────────────────────────────────
+function loadContacts(){return contactsData;}
+function saveContacts(c){contactsData=c;try{localStorage.setItem(CONTACTS_KEY,JSON.stringify(c));}catch(e){}}
+async function loadContactsFromSheet(){
+  try{
+    var res=await fetch(CONTACTS_CSV);
+    var text=await res.text();
+    var parsed=parseCSVGeneric(text).filter(function(r){return r.id&&r.venue;}).map(function(r){r.id=parseInt(r.id)||Date.now();return r;});
+    var cached=getCachedContacts(),map={};
+    cached.forEach(function(c){map[c.id]=c;});
+    contactsData=parsed.map(function(r){return map[r.id]?Object.assign({},r,map[r.id]):r;});
+    var ids=new Set(parsed.map(function(r){return r.id;}));
+    cached.forEach(function(c){if(!ids.has(c.id))contactsData.push(c);});
+  }catch(e){loadContactsFromCache();}
+  renderContacts();
+}
+function getCachedContacts(){try{return JSON.parse(localStorage.getItem(CONTACTS_KEY))||[];}catch(e){return[];}}
+function loadContactsFromCache(){contactsData=getCachedContacts();}
+function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("sidebarOverlay").classList.add("open");loadContactsFromSheet();}
+function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarOverlay").classList.remove("open");}
+function addContact(){
+  var contacts=loadContacts(),newId=Date.now();
+  var newContact={id:newId,venue:"New Venue",name:"",phone:"",email:"",fee:"",notes:""};
+  contacts.push(newContact);saveContacts(contacts);saveNewRow("contacts",newContact);renderContacts();
+  setTimeout(function(){var el=document.getElementById("cv-"+newId);if(el){el.click();el.scrollIntoView({behavior:"smooth",block:"center"});}},50);
+}
+function deleteContact(id){
+  if(!confirm("Delete this contact?"))return;
+  saveContacts(loadContacts().filter(function(c){return c.id!==id;}));
+  deleteRowRemote("contacts",id);renderContacts();
+}
+function editContactField(id,field,el){
+  var contacts=loadContacts(),contact=contacts.find(function(c){return c.id===id;});
+  if(!contact)return;
+  var cur=contact[field]||"",isML=field==="notes";
+  el.innerHTML=isML?'<textarea rows="2" autofocus style="width:100%;background:none;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--black);resize:none">'+cur+'</textarea>':
+    '<input type="text" value="'+cur.replace(/"/g,'&quot;')+'" autofocus style="width:100%;background:none;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--black)" />';
+  var input=el.querySelector("input,textarea");input.focus();input.select&&input.select();
+  var commit=function(){var val=input.value.trim();contact[field]=val;saveContacts(contacts);saveCell("contacts",id,field,val);renderContacts();};
+  input.addEventListener("blur",commit);
+  input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!isML){e.preventDefault();input.blur();}});
+}
+function renderContacts(){
+  var contacts=loadContacts();
+  var q=(document.getElementById("contactSearch")?.value||"").toLowerCase().trim();
+  var filtered=q?contacts.filter(function(c){return(c.venue||"").toLowerCase().includes(q)||(c.name||"").toLowerCase().includes(q)||(c.phone||"").toLowerCase().includes(q)||(c.email||"").toLowerCase().includes(q)||(c.notes||"").toLowerCase().includes(q);}):contacts;
+  var body=document.getElementById("contactsBody");if(!body)return;
+  if(!filtered.length){body.innerHTML='<div class="no-contacts">'+(q?'😕 No contacts match your search.':'📋 No contacts yet.<br/>Hit <strong>+ Add Contact</strong> to get started!')+'</div>';return;}
+  body.innerHTML=filtered.map(function(c){
+    return '<div class="contact-card">'+
+      '<div class="contact-card-header"><div class="contact-venue" id="cv-'+c.id+'" onclick="editContactField('+c.id+',\'venue\',this)">'+(c.venue||'<span style="color:var(--pink-dark);font-style:italic">Venue name</span>')+'</div>'+
+      '<button class="contact-del-btn" onclick="deleteContact('+c.id+')">×</button></div>'+
+      '<div class="contact-fields">'+
+        '<div class="contact-field"><label>Contact Name</label><div class="cf-value '+(c.name?'':'empty')+'" onclick="editContactField('+c.id+',\'name\',this)">'+(c.name||'Add name')+'</div></div>'+
+        '<div class="contact-field"><label>Phone</label><div class="cf-value '+(c.phone?'':'empty')+'" onclick="editContactField('+c.id+',\'phone\',this)">'+(c.phone||'Add phone')+'</div></div>'+
+        '<div class="contact-field"><label>Email</label><div class="cf-value '+(c.email?'':'empty')+'" onclick="editContactField('+c.id+',\'email\',this)">'+(c.email||'Add email')+'</div></div>'+
+        '<div class="contact-field"><label>Booth Fee</label><div class="cf-value cf-fee '+(c.fee?'':'empty')+'" onclick="editContactField('+c.id+',\'fee\',this)">'+(c.fee||'Add fee')+'</div></div>'+
+        '<div class="contact-field full"><label>Notes</label><div class="cf-value '+(c.notes?'':'empty')+'" onclick="editContactField('+c.id+',\'notes\',this)">'+(c.notes||'Add notes')+'</div></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
++avgCost.toFixed(2)+' avg</td>'+
+          '<td colspan="3" style="text-align:center;color:var(--gray);font-size:12px">—</td>'+
+          '<td style="font-weight:800;font-size:13px;color:#2d7a4f;text-align:center">'+catSold+' sold</td>'+
+          '<td style="font-weight:800;font-size:13px;color:'+(catRem===0?'#888':'var(--black)')+';text-align:center">'+catRem+' left</td>'+
+          '<td colspan="4"></td>'+
+          '</tr>';
+
+        // Log a sale row
+        bodyHTML+='<tr style="background:'+s.bg+';border-bottom:3px solid '+s.border+'">'+
+          '<td colspan="15" style="padding:8px 14px">'+
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+              '<span style="font-size:11px;font-weight:700;color:'+s.color+';text-transform:uppercase;letter-spacing:.5px">Log '+cat+' Sale:</span>'+
+              '<input type="number" id="cat-qty-'+cat+'" placeholder="Qty sold" min="1" style="width:90px;padding:4px 8px;border:1.5px solid '+s.border+';border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;background:white" />'+
+              '<input type="text" id="cat-notes-'+cat+'" placeholder="Notes (optional)" style="flex:1;min-width:140px;padding:4px 8px;border:1.5px solid '+s.border+';border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;background:white" />'+
+              '<button onclick="logCatSale(\''+cat+'\')" style="padding:4px 14px;background:'+s.color+';color:white;border:none;border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer">+ Log</button>'+
+            '</div>'+
+          '</td>'+
+          '</tr>';
+      }
+    });
+
+    // Grand totals
+    var allSold=PATCH_CATS.reduce(function(s,c){return s+getCatSold(c);},0);
+    var allQ=rows.reduce(function(s,r){return s+(r.qty||0);},0);
+    var allRem=Math.max(0,allQ-allSold);
+
+    document.getElementById("tableContainer").innerHTML=
+      '<div class="table-wrap">'+
+      '<table>'+
+      '<thead><tr>'+
+        '<th>✓</th><th class="left sticky">Item</th><th>Category</th><th>Qty</th>'+
+        '<th>Bundle Cost</th><th>Cost/Item</th><th>Retail</th><th>ROI %</th>'+
+        '<th>Margin/Item</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Remaining</th>'+
+        '<th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+        '<th class="left">Source</th><th>By</th><th></th>'+
+      '</tr></thead>'+
+      '<tbody>'+bodyHTML+'</tbody>'+
+      '<tfoot><tr>'+
+        '<td colspan="3" style="text-align:left">GRAND TOTALS</td>'+
+        '<td>'+allQ+'</td>'+
+        '<td class="total-cost">$'+totalWholesale.toFixed(2)+'</td>'+
+        '<td>—</td><td>—</td><td>—</td><td>—</td>'+
+        '<td style="color:#2d7a4f;font-weight:700">'+allSold+'</td>'+
+        '<td style="color:'+(allRem===0?'#888':'var(--black)')+';font-weight:700">'+allRem+'</td>'+
+        '<td style="color:#2d7a4f;font-weight:700">'+(totalActRev>0?'$'+totalActRev.toFixed(2):'—')+'</td>'+
+        '<td colspan="3"></td>'+
+      '</tr></tfoot>'+
+      '</table></div>'+
+      '<button class="add-btn" onclick="addRow(\'patches\')">+ Add Row</button>';
+    return;
+  }
+
+  var bodyHTML=rows.map(function(r,i){return buildRow(r,i,activeTab,showRetail);}).join('');
+      var rh=showRetail?'<th>Retail</th><th>ROI %</th>':'';
+  var rf=showRetail?'<td>—</td><td>—</td>':'';
+
+  document.getElementById("tableContainer").innerHTML=
+    '<div class="table-wrap"><table>'+
+    '<thead><tr><th>✓</th><th class="left sticky">Item</th><th>Qty</th><th>Bundle Cost</th><th>Cost/Item</th>'+rh+'<th>Margin/Item</th>'+
+    '<th style="background:#1a3d2b;color:#7ecfa0">Sold</th><th style="background:#1a3d2b;color:#7ecfa0">Remaining</th><th style="background:#1a3d2b;color:#7ecfa0">Act. Revenue</th>'+
+    '<th class="left">Source</th><th>By</th><th></th></tr></thead>'+
+    '<tbody>'+bodyHTML+'</tbody>'+
+    '<tfoot><tr><td colspan="2" style="text-align:left">TOTALS</td><td>'+totalItems+'</td><td class="total-cost">$'+totalWholesale.toFixed(2)+'</td><td>—</td>'+rf+'<td>—</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+totalSold+'</td><td>—</td>'+
+    '<td style="color:#2d7a4f;font-weight:700">'+(totalActRev>0?'$'+totalActRev.toFixed(2):'—')+'</td><td colspan="3"></td></tr></tfoot>'+
+    '</table></div>'+
+    '<button class="add-btn" onclick="addRow(\''+activeTab+'\')">+ Add Row</button>';
+}
+
+function buildRow(r,i,sheet,showRetail) {
+  var c=cpu(r),rv=roiVal(r),margin=r.retail?r.retail-c:null,rs=rv!==null?roiStyle(rv):"";
+  var rowClass=r.arrived?(i%2===0?"arrived-even":"arrived-odd"):"pending";
+  var byClass=r.purchaser==="Jamie"?"by-jamie":"by-tara";
+  var qtySold=r.qty_sold||0,qtyLeft=(r.qty||0)-qtySold;
+  var actualRev=r.retail&&qtySold>0?r.retail*qtySold:null;
+  var marginColor=margin!==null?(margin>0?"green":"red-val"):"gray-val";
+  var soldStyle=qtySold>0?' style="color:#2d7a4f;font-weight:700"':'';
+  var leftStyle=qtyLeft<0?' style="color:#c0392b;font-weight:700"':(qtyLeft===0&&r.qty>0?' style="color:#888"':'');
+  var catCell=sheet==="patches"?'<td>'+catDropdown(r)+'</td>':'';
+  var retailCells=showRetail?
+    '<td>'+editableCell(r,"retail","number","$",sheet)+'</td>'+
+    '<td>'+(rv!==null?'<span class="roi" style="'+rs+'">'+rv+'%</span>':'<span style="color:var(--pink-dark)">—</span>')+'</td>':'';
+
+  return '<tr class="'+rowClass+'" id="row-'+sheet+'-'+r.id+'">'+
+    '<td><input type="checkbox"'+(r.arrived?' checked':'')+' onchange="toggleArrived(\''+sheet+'\','+r.id+',this.checked)"/></td>'+
+    '<td class="left sticky">'+editableCell(r,"item","text","",sheet)+'</td>'+
     catCell+
     '<td>'+editableCell(r,"qty","number","",sheet)+'</td>'+
     '<td>'+editableCell(r,"wholesale","number","$",sheet)+'</td>'+
